@@ -12,7 +12,7 @@ import { UserRepository } from '@modules/user/user.repository';
     TypeOrmExModule.forCustomRepository([UserRepository]),
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository],
-  exports: [UserService, UserRepository], // Auth 모듈에서 사용
+  providers: [UserService],
+  exports: [TypeOrmExModule], // Auth 모듈에서 사용
 })
 export class UserModule {}

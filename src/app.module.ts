@@ -9,6 +9,8 @@ import { AuthModule } from '@modules/auth/auth.module';
 import appConfig from '@common/config/app.config';
 import databaseConfig from '@common/config/database.config';
 import jwtConfig from '@common/config/jwt.config';
+import { TypeOrmExModule } from '@common/database/typeorm-ex.module';
+import { UserRepository } from '@modules/user/user.repository';
 
 @Module({
   imports: [
@@ -16,25 +18,17 @@ import jwtConfig from '@common/config/jwt.config';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig], // TODO.. 이거 따로 필요한것들만 뽑아서 사용할 수 있는 func 만드는게 좋을듯
-      envFilePath: `environments/.env.${process.env.NODE_ENV || 'test'}`,
+      envFilePath: `environments/.env.${process.env.NODE_ENV || 'local'}`,
       validate,
     }),
 
     // TypeOrmModule (Root)
     TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'mysql',
-        host: config.get<string>('database.host'),
-        port: config.get<number>('database.port'),
-        username: config.get<string>('database.username'),
-        password: config.get<string>('database.password'),
-        database: config.get<string>('database.database'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: config.get<boolean>('database.synchronize'),
-        logging: config.get<boolean>('database.logging'),
-      }),
+      inject: [databaseConfig.KEY],
+      useFactory: async (config) => ({ ...config, autoLoadEntities: true }),
     }),
+
+    TypeOrmExModule.forCustomRepository([UserRepository]),
 
     // Domain Modules
     UserModule,

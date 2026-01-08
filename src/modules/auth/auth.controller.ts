@@ -1,4 +1,13 @@
-import { Controller, Post, Body, UseGuards, Get, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Req,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -36,6 +45,7 @@ export class AuthController {
     description: '로그인 성공',
     type: AuthOutDto,
   })
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({ status: 401, description: '인증 실패' })
   async login(@Body() loginDto: LoginDto): Promise<AuthOutDto> {
     return await this.authService.login(loginDto);

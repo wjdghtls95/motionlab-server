@@ -20,8 +20,9 @@ export class TypeOrmExModule {
         provide: repository,
         inject: [getDataSourceToken()],
         useFactory: (dataSource: DataSource): typeof repository => {
-          const baseRepository = dataSource.getRepository(entity);
-          return new repository(baseRepository);
+          const entityManager = dataSource.createEntityManager();
+
+          return new repository(entity, entityManager);
         },
       });
     }
