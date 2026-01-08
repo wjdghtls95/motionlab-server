@@ -3,7 +3,7 @@ import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com', description: '이메일' })
-  @IsEmail({ message: '유효한 이메일 주소를 입력해주세요' })
+  @IsEmail()
   email: string;
 
   @ApiProperty({ example: 'password123', description: '비밀번호 (최소 6자)' })

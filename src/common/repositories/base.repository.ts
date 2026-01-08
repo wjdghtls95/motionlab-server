@@ -20,13 +20,13 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
   /**
    * 테이블 alias (QueryBuilder에서 사용)
    */
-  protected readonly alias: string = this.metadata.tableName;
-
+  protected get alias(): string {
+    return this.metadata.tableName;
+  }
   /**
    * EntityManager 반환 (QueryRunner 우선)
    */
   private get entityManager(): EntityManager {
-    // TODO: QueryRunner 헬퍼 구현 시 추가
     return this.manager;
   }
 

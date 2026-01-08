@@ -6,14 +6,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { BaseEntity } from '@common/entities/base.entity';
 
 @Entity('users')
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ unique: true })
-  @Index()
+@Index('IDX_USER_EMAIL', ['email'], { unique: true }) // 명시적 인덱스 이름
+export class User extends BaseEntity {
+  @Column()
   email: string;
 
   @Column()
@@ -21,10 +19,4 @@ export class User {
 
   @Column({ nullable: true })
   name: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
