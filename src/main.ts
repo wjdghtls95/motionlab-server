@@ -1,13 +1,18 @@
 // src/main.ts
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '@/app.module';
+import { AllExceptionFilter } from '@common/filters/all-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // exception filter
+  const httpAdapterHost = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new AllExceptionFilter(httpAdapterHost));
 
   // CORS (config에서 가져오기)
   app.enableCors({
@@ -27,7 +32,7 @@ async function bootstrap() {
   // Swagger
   const swaggerConfig = new DocumentBuilder()
     .setTitle('MotionLab API')
-    .setDescription('Golf Swing Analysis Platform API')
+    .setDescription('Swing Analysis Platform API')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

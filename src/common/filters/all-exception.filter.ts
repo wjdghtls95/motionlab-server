@@ -10,6 +10,8 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { DomainException } from '../exceptions/domain.exception';
 import { SystemException } from '../exceptions/system.exception';
 import { SENSITIVE_KEYWORDS } from '../constants/security.constants';
+import { SYSTEM_ERRORS } from '../constants/errors/system.errors';
+import { ERROR_SEVERITY } from '@common/constants/errors/error-severity';
 
 interface ErrorInfo {
   httpStatus: number;
@@ -69,9 +71,9 @@ export class AllExceptionFilter implements ExceptionFilter {
 
       // severity 기반 동적 판단
       const isSystemError =
-        httpStatus >= 500 ||
-        exception.severity === 'high' ||
-        exception.severity === 'critical';
+        httpStatus >= HttpStatus.INTERNAL_SERVER_ERROR ||
+        exception.severity === ERROR_SEVERITY.HIGH ||
+        exception.severity === ERROR_SEVERITY.CRITICAL;
 
       return {
         httpStatus,
@@ -116,7 +118,7 @@ export class AllExceptionFilter implements ExceptionFilter {
         httpStatus,
         errorCode,
         message,
-        isSystemError: httpStatus >= 500, // 자동 판단
+        isSystemError: httpStatus >= HttpStatus.INTERNAL_SERVER_ERROR, // 자동 판단
         cause: null,
       };
     }
@@ -124,8 +126,8 @@ export class AllExceptionFilter implements ExceptionFilter {
     // ==================== 4. Unknown Error ====================
     return {
       httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
-      errorCode: 'SYS_999',
-      message: 'Internal Server Error',
+      errorCode: SYSTEM_ERRORS.SYS_INTERNAL_SERVER_ERROR.code,
+      message: SYSTEM_ERRORS.SYS_INTERNAL_SERVER_ERROR.message,
       isSystemError: true, // 무조건 error
       cause:
         exception instanceof Error ? exception : new Error(String(exception)),

@@ -8,12 +8,15 @@ import {
   Param,
   UseInterceptors,
   ClassSerializerInterceptor,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserOutDto } from './dto/user-out.dto';
+import { ApiResponseSpec } from '@common/decorators/api-response-spec.decorator';
+import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 
 @ApiTags('Users')
 @Controller('users')
@@ -22,66 +25,64 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  @ApiOperation({ summary: '사용자 생성' })
-  @ApiResponse({
-    status: 201,
-    description: '사용자가 성공적으로 생성됨',
+  @ApiResponseSpec({
+    summary: '사용자 생성',
+    status: HttpStatus.CREATED,
     type: UserOutDto,
+    errors: [DOMAIN_ERRORS.USER_ALREADY_EXISTS],
   })
-  @ApiResponse({ status: 409, description: '이메일이 이미 존재함' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserOutDto> {
     const user = await this.userService.create(createUserDto);
 
-    return new UserOutDto({ ...user });
+    return UserOutDto.of(user);
   }
 
   @Get()
-  @ApiOperation({ summary: '모든 사용자 조회' })
-  @ApiResponse({
-    status: 200,
-    description: '사용자 목록',
-    type: [UserOutDto],
+  @ApiResponseSpec({
+    summary: '모든 사용자 조회',
+    type: UserOutDto,
+    isArray: true, // 배열 응답
   })
-  async findAll() {
+  async findAll(): Promise<UserOutDto[]> {
     const users = await this.userService.findAll();
 
-    return users.map((user) => new UserOutDto({ ...user }));
+    return users.map((user) => UserOutDto.of(user));
   }
 
   @Get(':id')
-  @ApiOperation({ summary: '사용자 조회 (ID)' })
-  @ApiResponse({
-    status: 200,
-    description: '사용자 정보',
+  @ApiResponseSpec({
+    summary: '사용자 조회',
     type: UserOutDto,
+    errors: [DOMAIN_ERRORS.USER_NOT_FOUND],
   })
-  @ApiResponse({ status: 404, description: '사용자를 찾을 수 없음' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string): Promise<UserOutDto> {
     const user = await this.userService.findById(Number(id));
-    return new UserOutDto(user);
+
+    return UserOutDto.of(user);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: '사용자 정보 수정' })
-  @ApiResponse({
-    status: 200,
-    description: '사용자 정보가 수정됨',
+  @ApiResponseSpec({
+    summary: '사용자 정보 수정',
     type: UserOutDto,
+    errors: [DOMAIN_ERRORS.USER_NOT_FOUND],
   })
-  @ApiResponse({ status: 404, description: '사용자를 찾을 수 없음' })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserOutDto> {
     const user = await this.userService.update(Number(id), updateUserDto);
 
-    return new UserOutDto({ ...user });
+    return UserOutDto.of(user);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: '사용자 삭제' })
-  @ApiResponse({ status: 200, description: '사용자가 삭제됨' })
-  @ApiResponse({ status: 404, description: '사용자를 찾을 수 없음' })
-  async remove(@Param('id') id: string) {
+  @ApiResponseSpec({
+    summary: '사용자 삭제',
+    status: HttpStatus.OK, // 응답 본문 있음 (message)
+    errors: [DOMAIN_ERRORS.USER_NOT_FOUND],
+  })
+  async remove(@Param('id') id: string): Promise<void> {
     await this.userService.remove(Number(id));
-
-    return { message: 'User deleted successfully' };
   }
 }

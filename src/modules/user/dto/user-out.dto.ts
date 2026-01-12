@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { BaseOutDto } from '@common/dto/base-out.dto';
 
-export class UserOutDto {
+export class UserOutDto extends BaseOutDto {
   @ApiProperty()
   id: number;
 
@@ -19,8 +20,4 @@ export class UserOutDto {
 
   @ApiProperty()
   updatedAt: Date;
-
-  constructor(partial: Partial<UserOutDto>) {
-    Object.assign(this, partial);
-  }
 }
