@@ -19,31 +19,6 @@ export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
   /**
-   * 새 사용자 생성
-   */
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    // 이메일 중복 체크
-    const existingUser = await this.userRepository.findByEmail(
-      createUserDto.email,
-    );
-
-    if (existingUser) {
-      throw new DomainException(DOMAIN_ERRORS.USER_ALREADY_EXISTS);
-    }
-
-    // pw 해싱
-    const hashedPw = await PasswordUtil.hash(createUserDto.password);
-
-    // create user
-    const user = this.userRepository.create({
-      ...createUserDto,
-      password: hashedPw,
-    });
-
-    return this.userRepository.save(user);
-  }
-
-  /**
    * ID로 사용자 찾기
    */
   async findById(id: number): Promise<User> {

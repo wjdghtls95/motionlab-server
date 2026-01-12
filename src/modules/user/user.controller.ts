@@ -24,19 +24,6 @@ import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  @ApiResponseSpec({
-    summary: '사용자 생성',
-    status: HttpStatus.CREATED,
-    type: UserOutDto,
-    errors: [DOMAIN_ERRORS.USER_ALREADY_EXISTS],
-  })
-  async create(@Body() createUserDto: CreateUserDto): Promise<UserOutDto> {
-    const user = await this.userService.create(createUserDto);
-
-    return UserOutDto.of(user);
-  }
-
   @Get()
   @ApiResponseSpec({
     summary: '모든 사용자 조회',

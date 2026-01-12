@@ -36,44 +36,6 @@ describe('UserService (Integration)', () => {
     }
   });
 
-  describe('create', () => {
-    it('✅ 새 유저 생성 성공', async () => {
-      const createDto = userMockData.validUser;
-
-      const result = await userService.create(createDto);
-
-      expect(result.id).toBeDefined();
-      expect(result.email).toBe(createDto.email);
-      expect(result.name).toBe(createDto.name);
-
-      const savedUser = await userRepository.findByEmail(createDto.email);
-      expect(savedUser).toBeDefined();
-    });
-
-    it('❌ 중복 이메일 생성 실패', async () => {
-      await TestUserHelper.createUser(userMockData.validUser);
-
-      await expect(userService.create(userMockData.validUser)).rejects.toThrow(
-        DomainException,
-      );
-    });
-
-    it('❌ 동시에 같은 이메일로 가입 - 하나만 성공', async () => {
-      const createDto = userMockData.validUser;
-
-      const users = await Promise.allSettled([
-        userService.create(createDto),
-        userService.create(createDto),
-      ]);
-
-      const succeeded = users.filter((res) => res.status === 'fulfilled');
-      const failed = users.filter((res) => res.status === 'rejected');
-
-      expect(succeeded).toHaveLength(1);
-      expect(failed).toHaveLength(1);
-    });
-  });
-
   describe('findAll', () => {
     it('✅ 모든 유저 조회', async () => {
       await TestUserHelper.createUsers(3);
