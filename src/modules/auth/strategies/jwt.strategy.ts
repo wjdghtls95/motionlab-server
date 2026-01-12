@@ -1,8 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserRepository } from '@modules/user/user.repository';
+import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
+import { DomainException } from '@common/exceptions/domain.exception';
 
 export interface JwtPayload {
   sub: number; // user id
@@ -30,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userRepository.findById(payload.sub);
 
     if (!user) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw new DomainException(DOMAIN_ERRORS.AUTH_TOKEN_INVALID);
     }
 
     return user; // request.user에 할당

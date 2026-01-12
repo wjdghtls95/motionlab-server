@@ -1,13 +1,10 @@
 import { plainToInstance } from 'class-transformer';
 import {
   IsEnum,
-  IsNumber,
   IsString,
   IsBoolean,
   IsOptional,
   validateSync,
-  Min,
-  Max,
 } from 'class-validator';
 
 /**

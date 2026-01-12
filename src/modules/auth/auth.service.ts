@@ -10,6 +10,8 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { AuthOutDto } from '@modules/auth/dto/auth-out.dto';
 import { UserRepository } from '@modules/user/user.repository';
+import { DomainException } from '@common/exceptions/domain.exception';
+import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +30,7 @@ export class AuthService {
 
     // 이메일 중복 확인
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new DomainException(DOMAIN_ERRORS.AUTH_EMAIL_ALREADY_EXISTS);
     }
 
     // 비밀번호 해싱
@@ -61,7 +63,7 @@ export class AuthService {
     const user = await this.userRepository.findByEmail(loginDto.email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new DomainException(DOMAIN_ERRORS.AUTH_INVALID_CREDENTIALS);
     }
 
     // 비밀번호 검증
@@ -71,7 +73,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new DomainException(DOMAIN_ERRORS.AUTH_INVALID_CREDENTIALS);
     }
 
     // JWT 토큰 생성

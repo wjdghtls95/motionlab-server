@@ -1,236 +1,183 @@
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { getRepositoryToken } from '@nestjs/typeorm';
-// import { Repository } from 'typeorm';
-// import { ConflictException, NotFoundException } from '@nestjs/common';
-// import * as bcrypt from 'bcrypt';
-//
-// jest.mock('bcrypt');
-//
-// describe('UserService', () => {
-//   let userService: UserService;
-//   let repository: Repository<User>;
-//
-//   const mockRepository = {
-//     create: jest.fn(),
-//     save: jest.fn(),
-//     findOne: jest.fn(),
-//     find: jest.fn(),
-//     delete: jest.fn(),
-//   };
-//
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       providers: [
-//         UserService,
-//         {
-//           provide: getRepositoryToken(User),
-//           useValue: mockRepository,
-//         },
-//       ],
-//     }).compile();
-//
-//     userService = module.get<UserService>(UserService);
-//     repository = module.get<Repository<User>>(getRepositoryToken(User));
-//   });
-//
-//   afterEach(() => {
-//     jest.clearAllMocks();
-//   });
-//
-//   it('should be defined', () => {
-//     expect(userService).toBeDefined();
-//   });
-//
-//   describe('create', () => {
-//     it('should create a new user', async () => {
-//       const createUserDto: CreateUserDto = {
-//         email: 'test@example.com',
-//         password: 'password123',
-//         name: 'Test User',
-//       };
-//
-//       const hashedPassword = 'hashedPassword';
-//       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
-//
-//       mockRepository.findOne.mockResolvedValue(null);
-//       mockRepository.create.mockReturnValue({
-//         ...createUserDto,
-//         password: hashedPassword,
-//       });
-//       mockRepository.save.mockResolvedValue({
-//         id: 'uuid',
-//         ...createUserDto,
-//         password: hashedPassword,
-//         isActive: true,
-//         createdAt: new Date(),
-//         updatedAt: new Date(),
-//       });
-//
-//       const result = await userService.create(createUserDto);
-//
-//       expect(bcrypt.hash).toHaveBeenCalledWith(createUserDto.password, 10);
-//       expect(mockRepository.findOne).toHaveBeenCalledWith({
-//         where: { email: createUserDto.email },
-//       });
-//       expect(mockRepository.create).toHaveBeenCalled();
-//       expect(mockRepository.save).toHaveBeenCalled();
-//       expect(result.email).toBe(createUserDto.email);
-//     });
-//
-//     it('should throw ConflictException if email already exists', async () => {
-//       const createUserDto: CreateUserDto = {
-//         email: 'test@example.com',
-//         password: 'password123',
-//       };
-//
-//       mockRepository.findOne.mockResolvedValue({ id: 'existing-user' });
-//
-//       await expect(userService.create(createUserDto)).rejects.toThrow(
-//         ConflictException,
-//       );
-//     });
-//   });
-//
-//   describe('findByEmail', () => {
-//     it('should return user by email', async () => {
-//       const email = 'test@example.com';
-//       const user = { id: 'uuid', email, password: 'hashed' };
-//
-//       mockRepository.findOne.mockResolvedValue(user);
-//
-//       const result = await userService.findByEmail(email);
-//
-//       expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { email } });
-//       expect(result).toEqual(user);
-//     });
-//
-//     it('should return null if user not found', async () => {
-//       mockRepository.findOne.mockResolvedValue(null);
-//
-//       const result = await userService.findByEmail('notfound@example.com');
-//
-//       expect(result).toBeNull();
-//     });
-//   });
-//
-//   describe('findById', () => {
-//     it('should return user by id', async () => {
-//       const id = 1;
-//       const user = { id, email: 'test@example.com' };
-//
-//       mockRepository.findOne.mockResolvedValue(user);
-//
-//       const result = await userService.findById(id);
-//
-//       expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id } });
-//       expect(result).toEqual(user);
-//     });
-//
-//     it('should throw NotFoundException if user not found', async () => {
-//       mockRepository.findOne.mockResolvedValue(null);
-//
-//       await expect(userService.findById(9999)).rejects.toThrow(
-//         NotFoundException,
-//       );
-//     });
-//   });
-//
-//   describe('findAll', () => {
-//     it('should return all users', async () => {
-//       const users = [
-//         { id: '1', email: 'user1@example.com' },
-//         { id: '2', email: 'user2@example.com' },
-//       ];
-//
-//       mockRepository.find.mockResolvedValue(users);
-//
-//       const result = await userService.findAll();
-//
-//       expect(mockRepository.find).toHaveBeenCalledWith({
-//         order: { createdAt: 'DESC' },
-//       });
-//       expect(result).toEqual(users);
-//     });
-//   });
-//
-//   describe('update', () => {
-//     it('should update user', async () => {
-//       const id = 1;
-//       const updateUserDto: UpdateUserDto = { name: 'Updated Name' };
-//       const existingUser = { id, email: 'test@example.com', name: 'Old Name' };
-//       const updatedUser = { ...existingUser, ...updateUserDto };
-//
-//       mockRepository.findOne.mockResolvedValue(existingUser);
-//       mockRepository.save.mockResolvedValue(updatedUser);
-//
-//       const result = await userService.update(id, updateUserDto);
-//
-//       expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id } });
-//       expect(mockRepository.save).toHaveBeenCalled();
-//       expect(result.name).toBe(updateUserDto.name);
-//     });
-//
-//     it('should throw NotFoundException if user not found', async () => {
-//       mockRepository.findOne.mockResolvedValue(null);
-//
-//       await expect(userService.update(9999, { name: 'Test' })).rejects.toThrow(
-//         NotFoundException,
-//       );
-//     });
-//   });
-//
-//   describe('remove', () => {
-//     it('should delete user', async () => {
-//       const id = 1;
-//       const user = { id, email: 'test@example.com' };
-//
-//       mockRepository.findOne.mockResolvedValue(user);
-//       mockRepository.delete.mockResolvedValue({ affected: 1 });
-//
-//       await userService.remove(id);
-//
-//       expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id } });
-//       expect(mockRepository.delete).toHaveBeenCalledWith(id);
-//     });
-//
-//     it('should throw NotFoundException if user not found', async () => {
-//       mockRepository.findOne.mockResolvedValue(null);
-//
-//       await expect(userService.remove(9999)).rejects.toThrow(NotFoundException);
-//     });
-//   });
-//
-//   describe('validatePassword', () => {
-//     it('should return true for correct password', async () => {
-//       const plainPassword = 'password123';
-//       const hashedPassword = 'hashedPassword';
-//
-//       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-//
-//       const result = await userService.validatePassword(
-//         plainPassword,
-//         hashedPassword,
-//       );
-//
-//       expect(bcrypt.compare).toHaveBeenCalledWith(
-//         plainPassword,
-//         hashedPassword,
-//       );
-//       expect(result).toBe(true);
-//     });
-//
-//     it('should return false for incorrect password', async () => {
-//       const plainPassword = 'wrongpassword';
-//       const hashedPassword = 'hashedPassword';
-//
-//       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-//
-//       const result = await userService.validatePassword(
-//         plainPassword,
-//         hashedPassword,
-//       );
-//
-//       expect(result).toBe(false);
-//     });
-//   });
-// });
+import { TestingModule } from '@nestjs/testing';
+import { UserService } from '@/modules/user/user.service';
+import { UserRepository } from '@/modules/user/user.repository';
+import { getTestModule } from '../test-helper/get-test-module';
+import { TestDatabaseHelper } from '../test-helper/test-database.helper';
+import { TestUserHelper } from '../test-helper/test-user.helper';
+import { userMockData } from '../mock-data/user.mock';
+import { DomainException } from '@common/exceptions/domain.exception';
+import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
+
+describe('UserService (Integration)', () => {
+  let module: TestingModule;
+  let userService: UserService;
+  let userRepository: UserRepository;
+
+  beforeAll(async () => {
+    module = await getTestModule;
+
+    userService = module.get<UserService>(UserService);
+    userRepository = module.get<UserRepository>(UserRepository);
+
+    await TestDatabaseHelper.initialize(module);
+    TestUserHelper.initialize(userRepository);
+  });
+
+  beforeEach(async () => {
+    await TestDatabaseHelper.clearAll();
+    TestUserHelper.resetCounter();
+  });
+
+  afterAll(async () => {
+    await TestDatabaseHelper.close();
+
+    if (module) {
+      await module.close();
+    }
+  });
+
+  describe('create', () => {
+    it('✅ 새 유저 생성 성공', async () => {
+      const createDto = userMockData.validUser;
+
+      const result = await userService.create(createDto);
+
+      expect(result.id).toBeDefined();
+      expect(result.email).toBe(createDto.email);
+      expect(result.name).toBe(createDto.name);
+
+      const savedUser = await userRepository.findByEmail(createDto.email);
+      expect(savedUser).toBeDefined();
+    });
+
+    it('❌ 중복 이메일 생성 실패', async () => {
+      await TestUserHelper.createUser(userMockData.validUser);
+
+      await expect(userService.create(userMockData.validUser)).rejects.toThrow(
+        DomainException,
+      );
+    });
+
+    it('❌ 동시에 같은 이메일로 가입 - 하나만 성공', async () => {
+      const createDto = userMockData.validUser;
+
+      const users = await Promise.allSettled([
+        userService.create(createDto),
+        userService.create(createDto),
+      ]);
+
+      const succeeded = users.filter((res) => res.status === 'fulfilled');
+      const failed = users.filter((res) => res.status === 'rejected');
+
+      expect(succeeded).toHaveLength(1);
+      expect(failed).toHaveLength(1);
+    });
+  });
+
+  describe('findAll', () => {
+    it('✅ 모든 유저 조회', async () => {
+      await TestUserHelper.createUsers(3);
+
+      const result = await userService.findAll();
+
+      expect(result).toHaveLength(3);
+    });
+
+    it('✅ 유저 없을 때 빈 배열', async () => {
+      const result = await userService.findAll();
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('✅ 대량 데이터 조회 성능', async () => {
+      await TestUserHelper.createUsers(100);
+
+      const startTime = Date.now();
+      const result = await userRepository.findAll();
+      const duration = Date.now() - startTime;
+
+      expect(result).toHaveLength(100);
+      expect(duration).toBeLessThan(1000); // 1초 이내
+    });
+  });
+
+  describe('findOne', () => {
+    it('✅ ID로 유저 조회', async () => {
+      const user = await TestUserHelper.createUser(userMockData.validUser);
+
+      const result = await userRepository.findById(user.id);
+
+      expect(result.id).toBe(user.id);
+      expect(result.email).toBe(user.email);
+    });
+  });
+
+  describe('update', () => {
+    it('✅ 유저 정보 수정', async () => {
+      const user = await TestUserHelper.createUser(userMockData.validUser);
+      const updateDto = { name: 'Updated Name' };
+
+      const result = await userService.update(user.id, updateDto);
+
+      expect(result.name).toBe(updateDto.name);
+      expect(result.email).toBe(user.email);
+
+      const updatedUser = await userRepository.findByEmail(user.email);
+      expect(updatedUser.name).toBe(updateDto.name);
+    });
+
+    it('❌ 존재하지 않는 유저 수정', async () => {
+      await expect(userService.update(99999, { name: 'Test' })).rejects.toThrow(
+        DomainException,
+      );
+
+      // 에러 코드 검증
+      try {
+        await userService.update(99999, { name: 'Test' });
+      } catch (error) {
+        expect(error).toBeInstanceOf(DomainException);
+        expect(error.code).toBe(DOMAIN_ERRORS.USER_NOT_FOUND.code);
+      }
+    });
+  });
+
+  describe('remove', () => {
+    it('✅ 유저 삭제', async () => {
+      const user = await TestUserHelper.createUser(userMockData.validUser);
+
+      await userService.remove(user.id);
+
+      const deletedUser = await userRepository.findByEmail(user.email);
+      expect(deletedUser).toBeNull();
+    });
+
+    it('❌ 존재하지 않는 유저 삭제', async () => {
+      await expect(userService.remove(99999)).rejects.toThrow(DomainException);
+    });
+  });
+
+  describe('findByEmail', () => {
+    it('✅ 이메일로 유저 조회', async () => {
+      const user = await TestUserHelper.createUser(userMockData.validUser);
+
+      const result = await userRepository.findByEmail(user.email);
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(user.id);
+    });
+
+    it('✅ 존재하지 않는 이메일은 null', async () => {
+      const result = await userRepository.findByEmail('notfound@test.com');
+
+      expect(result).toBeNull();
+    });
+
+    it('✅ SQL Injection 방어', async () => {
+      const maliciousEmail = "admin'--";
+
+      const result = await userRepository.findByEmail(maliciousEmail);
+
+      expect(result).toBeNull();
+    });
+  });
+});

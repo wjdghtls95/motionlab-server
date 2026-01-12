@@ -47,11 +47,23 @@ export class TestUserHelper {
    * 여러 테스트 유저 생성
    */
   static async createUsers(count: number): Promise<User[]> {
+    // 비밀번호 해싱 생략 (미리 해싱된 문자열 사용)
+    // 실제 '1234'의 Bcrypt 해시값이고 테스트용으로 고정해서 사용
     const users: User[] = [];
+
+    const PRE_HASHED_PASSWORD = '$2b$10$EpRO.dJ1k.y0z.m/..dummyhash..';
+
     for (let i = 0; i < count; i++) {
-      users.push(await this.createUser());
+      users.push(
+        this.userRepository.create({
+          email: `bulk${i}@test.com`,
+          name: `User${i}`,
+          password: PRE_HASHED_PASSWORD,
+        }),
+      );
     }
-    return users;
+
+    return await this.userRepository.save(users);
   }
 
   /**

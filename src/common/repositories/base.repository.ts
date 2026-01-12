@@ -33,7 +33,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
   /**
    * QueryBuilder 생성
    */
-  protected getQueryBuilder(): SelectQueryBuilder<Entity> {
+  protected get getQueryBuilder(): SelectQueryBuilder<Entity> {
     return this.entityManager.createQueryBuilder(this.target, this.alias);
   }
 
@@ -41,24 +41,9 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
    * ID로 단일 조회
    */
   async findById(id: number): Promise<Entity | null> {
-    return await this.getQueryBuilder()
+    return await this.getQueryBuilder
       .where(`${this.alias}.id = :id`, { id })
       .getOne();
-  }
-
-  /**
-   * ID로 조회 (없으면 예외)
-   */
-  async findByIdOrFail(id: number): Promise<Entity> {
-    const entity = await this.findById(id);
-
-    if (!entity) {
-      throw new NotFoundException(
-        `${this.metadata.targetName} with id ${id} not found`,
-      );
-    }
-
-    return entity;
   }
 
   /**
@@ -67,14 +52,14 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
   async findByIdIn(ids: number[]): Promise<Entity[]> {
     if (!ids || ids.length === 0) return [];
 
-    return await this.getQueryBuilder().whereInIds(ids).getMany();
+    return await this.getQueryBuilder.whereInIds(ids).getMany();
   }
 
   /**
    * ID 존재 여부 확인
    */
   async existsById(id: number): Promise<boolean> {
-    const count = await this.getQueryBuilder()
+    const count = await this.getQueryBuilder
       .where(`${this.alias}.id = :id`, { id })
       .getCount();
 
@@ -89,7 +74,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
       | QueryDeepPartialEntity<Entity>
       | QueryDeepPartialEntity<Entity>[],
   ): Promise<InsertResult> {
-    return await this.getQueryBuilder()
+    return await this.getQueryBuilder
       .insert()
       .values(entityOrEntities)
       .execute();
@@ -103,7 +88,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
       | QueryDeepPartialEntity<Entity>
       | QueryDeepPartialEntity<Entity>[],
   ): Promise<InsertResult> {
-    const result = await this.getQueryBuilder()
+    const result = await this.getQueryBuilder
       .insert()
       .values(entityOrEntities)
       .updateEntity(false)
@@ -169,7 +154,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
     id: number,
     values: QueryDeepPartialEntity<Entity>,
   ): Promise<UpdateResult> {
-    const result = await this.getQueryBuilder()
+    const result = await this.getQueryBuilder
       .update()
       .set(values)
       .where(`${this.alias}.id = :id`, { id })
@@ -195,7 +180,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
       throw new Error('ids array cannot be empty');
     }
 
-    const result = await this.getQueryBuilder()
+    const result = await this.getQueryBuilder
       .update()
       .set(values)
       .whereInIds(ids)
@@ -214,7 +199,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
    * ID로 삭제
    */
   async deleteById(id: number): Promise<DeleteResult> {
-    return await this.getQueryBuilder()
+    return await this.getQueryBuilder
       .delete()
       .where(`${this.alias}.id = :id`, { id })
       .execute();
@@ -228,7 +213,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
       throw new Error('ids array cannot be empty');
     }
 
-    return await this.getQueryBuilder().delete().whereInIds(ids).execute();
+    return await this.getQueryBuilder.delete().whereInIds(ids).execute();
   }
 
   /**
@@ -238,7 +223,7 @@ export abstract class BaseRepository<Entity> extends Repository<Entity> {
     const take = options.take || 20;
     const skip = options.skip || 0;
 
-    const queryBuilder = this.getQueryBuilder();
+    const queryBuilder = this.getQueryBuilder;
 
     if (options.where) {
       queryBuilder.where(options.where as FindOptionsWhere<Entity>);

@@ -9,28 +9,30 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import bcrypt from 'bcrypt';
+import { PasswordUtil } from '@common/utils/password.util';
+import { UserRepository } from '@modules/user/user.repository';
+import { DomainException } from '@common/exceptions/domain.exception';
+import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
-  ) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   /**
    * 새 사용자 생성
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
     // 이메일 중복 체크
-    const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
-    });
+    const existingUser = await this.userRepository.findByEmail(
+      createUserDto.email,
+    );
 
     if (existingUser) {
-      throw new ConflictException('User already exists');
+      throw new DomainException(DOMAIN_ERRORS.USER_ALREADY_EXISTS);
     }
 
     // pw 해싱
-    const hashedPw = await bcrypt.hash(createUserDto.password, 10);
+    const hashedPw = await PasswordUtil.hash(createUserDto.password);
 
     // create user
     const user = this.userRepository.create({
@@ -42,20 +44,13 @@ export class UserService {
   }
 
   /**
-   * 이메일로 사용자 찾기
-   */
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
-  }
-
-  /**
    * ID로 사용자 찾기
    */
   async findById(id: number): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new DomainException(DOMAIN_ERRORS.USER_NOT_FOUND);
     }
 
     return user;
@@ -65,14 +60,18 @@ export class UserService {
    * 모든 사용자 조회
    */
   async findAll(): Promise<User[]> {
-    return this.userRepository.find();
+    return await this.userRepository.find();
   }
 
   /**
    * 사용자 정보 수정
    */
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findById(id);
+    const user = await this.userRepository.findById(id);
+
+    if (!user) {
+      throw new DomainException(DOMAIN_ERRORS.USER_NOT_FOUND);
+    }
 
     Object.assign(user, updateUserDto);
 
@@ -83,17 +82,12 @@ export class UserService {
    * 사용자 삭제
    */
   async remove(id: number): Promise<void> {
-    const user = await this.findById(id);
-    await this.userRepository.delete(user.id);
-  }
+    const user = await this.userRepository.findById(id);
 
-  /**
-   * 비밀번호 검증
-   */
-  async validatePassword(
-    plainPassword: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
-    return bcrypt.compare(plainPassword, hashedPassword);
+    if (!user) {
+      throw new DomainException(DOMAIN_ERRORS.USER_NOT_FOUND);
+    }
+
+    await this.userRepository.delete(user.id);
   }
 }
