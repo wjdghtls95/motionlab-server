@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # ===================================
+  # API Server (NestJS)
+  # ===================================
+  api:
+    container_name: motionlab-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-4000}:4000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME:-motionlab}
+      DB_PASSWORD: ${DB_PASSWORD:-motionlab123}
+      DB_DATABASE: ${DB_DATABASE:-motionlab}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      ANALYZER_URL: http://analyzer:8000
+      ANALYZER_API_KEY: ${ANALYZER_API_KEY:-dev-internal-key-123}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./environments:/app/environments
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===================================
+  # Analyzer (FastAPI)
+  # ===================================
+  analyzer:
+    container_name: motionlab-analyzer
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    ports:
+      - "${ANALYZER_PORT:-8000}:8000"
+    environment:
+      ENV: ${ENV:-dev}
+      FASTAPI_PORT: 8000
+      DEBUG_MODE: ${DEBUG_MODE:-true}
+      INTERNAL_API_KEY: ${ANALYZER_API_KEY:-dev-internal-key-123}
+      LLM_PROVIDER: ${LLM_PROVIDER:-noop}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ../data:/app/data
+      - ../uploads:/app/uploads
+      - ../app/config:/app/app/config:ro
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===================================
+  # MySQL 8.0
+  # ===================================
+  mysql:
+    image: mysql:8.0
+    container_name: motionlab-mysql
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${DB_DATABASE:-motionlab}
+      MYSQL_USER: ${DB_USERNAME:-motionlab}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-motionlab123}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===================================
+  # Redis 7
+  # ===================================
+  redis:
+    image: redis:7-alpine
+    container_name: motionlab-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql-data:
+    name: motionlab-mysql-data
+  redis-data:
+    name: motionlab-redis-data
+
+networks:
+  motionlab-network:
+    name: motionlab-network
+    driver: bridge
