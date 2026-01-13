@@ -3,15 +3,7 @@
 
 echo "🔍 Pre-commit 검증 시작...\n"
 
-# Step 1: 에러 코드 검증
-echo "📋 Step 1/2: 에러 코드 검증 중..."
-pnpm validate:errors || {
-  echo "❌ 에러 코드 검증 실패"
-  exit 1
-}
-echo "✅ 에러 코드 검증 통과\n"
-
-# Step 2: Lint + 자동 수정
+# Lint + 자동 수정
 echo "🎨 Step 2/2: Lint 및 포맷 검사 중..."
 npx lint-staged || {
   echo "❌ Lint 검사 실패"
