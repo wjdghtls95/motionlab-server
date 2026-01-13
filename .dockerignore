@@ -1,0 +1,55 @@
+# .dockerignore
+# 의존성 (Docker 내부에서 새로 설치)
+node_modules
+
+# 빌드 결과물 (Docker 내부에서 새로 생성)
+dist
+
+# 로그 파일
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 환경 변수 파일 (민감 정보)
+.env
+.env.local
+.env.*.local
+environments/
+
+
+# Git 관련
+.git
+.gitignore
+
+# 테스트 및 커버리지
+coverage
+.nyc_output
+*.spec.ts
+*.e2e-spec.ts
+
+# IDE 설정
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS 관련
+.DS_Store
+Thumbs.db
+
+# Husky (Git Hooks)
+.husky
+
+# GitHub Actions
+.github
+
+# 문서
+README.md
+docs/
+
+# 임시 파일
+tmp/
+temp/
+*.tmp

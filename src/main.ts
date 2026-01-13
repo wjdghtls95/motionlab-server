@@ -1,4 +1,3 @@
-// src/main.ts
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

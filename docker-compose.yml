@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # NestJS API 서버
+  # ========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: motionlab-api
+    ports:
+      - "3000:3000"
+    volumes:
+      # 현재 디렉토리를 /app에 마운트 (Hot Reload)
+      - .:/app
+      # node_modules는 컨테이너 내부 것 사용
+      - /app/node_modules
+    env_file:
+      # environments 디렉토리의 .env.local 사용
+      - ./environments/.env.local
+    environment:
+      - NODE_ENV=local
+      - DB_HOST=mysql
+    depends_on:
+      - mysql
+      # - redis  # TODO.. Redis 사용 시 주석 해제
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+
+  # ========================================
+  # MySQL
+  # ========================================
+  mysql:
+    image: mysql:8.0
+    container_name: motionlab-mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - ./environments/.env.local
+    environment:
+      # 기본값 제거 environments/.env.local 에서 필수로 읽어옴
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      # 데이터 영속성 (컨테이너 삭제 후에도 데이터 유지)
+      - mysql_data:/var/lib/mysql
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+
+  # ========================================
+  # Redis (TODO.. 필요 시 주석 해제)
+  # ========================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: motionlab-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     # 데이터 영속성
+  #     - redis_data:/data
+  #   networks:
+  #     - motionlab-network
+  #   restart: unless-stopped
+
+# ========================================
+# 볼륨 정의 (데이터 영속성)
+# ========================================
+volumes:
+  mysql_data:
+    driver: local
+  # redis_data:  # TODO.. Redis 사용 시 주석 해제
+  #   driver: local
+
+# ========================================
+# 네트워크 정의
+# ========================================
+networks:
+  motionlab-network:
+    driver: bridge
