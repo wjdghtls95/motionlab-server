@@ -447,29 +447,80 @@ graph TB
 
 ### 실행 방법
 
-**Step 1. DB만 실행:**
+### Step 1. 데이터 백업 (필요 시)
 
-```bash
+docker compose down 명령어는 데이터를 유지하지만, 만약 -v 옵션을 붙여 초기화할 계획이라면 미리 데이터를 백업해야 합니다.
+
+```dockerfile
+(선택) 현재 실행 중인 DB 데이터 덤프
+docker exec motionlab-mysql mysqldump -u root -p${DB_PASSWORD} motionlab > backup.sql
+```
+
+### Step 2. 기존 컨테이너 정리
+
+실행 중인 모든 컨테이너(App + DB)를 종료합니다.
+
+```
+pnpm docker:down
+```
+
+### Step 3. init.sql 적용 확인
+
+docker-compose.yml에 DB 초기화 스크립트가 잘 연결되어 있는지 확인합니다. (최초 실행 시 테이블 자동 생성용)
+
+```dockerfile
+  # docker-compose.yml 예시
+volumes:
+- mysql_data:/var/lib/mysql
+- ./init.sql:/docker-entrypoint-initdb.d/init.sql  # 👈 이 부분이 있는지 확인
+```
+
+### Step 4. DB만 실행 (Hybrid Mode 시작)
+
+이제 DB 컨테이너만 백그라운드로 실행합니다.
+
+```dockerfile
 pnpm db:up
 ```
 
-**Step 2. 앱 실행 (로컬):**
+Step 5. 로컬 앱 실행
+이제 로컬에서 NestJS 서버를 실행합니다.
 
-```bash
+```dockerfile
 pnpm start:dev
-
 ```
 
-**Step 3. 접속 확인:**
+### 💡 주의사항
 
-```bash
+**init.sql**을 수정했다면, 반영을 위해 DB 볼륨을 초기화해야 할 수 있습니다.
+
+이 경우 docker compose down -v로 볼륨을 삭제 후 다시 pnpm db:up을 하세요.
+
+### ⚠️ 경고: 볼륨 삭제 시 모든 데이터가 삭제되므로 주의하세요!
+
+```dockerfile
+# 완전 초기화 (데이터 삭제)
+docker compose down -v
+
+# DB 재시작
+pnpm db:up
+
+# 앱 실행
+pnpm start:dev
+```
+
+### ✅ 확인 방법
+
+```dockerfile
+# 1) DB 컨테이너 상태 확인
+docker compose ps
+
+# 2) 로컬 앱 접속 확인
 curl http://localhost:4000
 
+# 3) DB 연결 확인
+docker compose exec mysql mysql -uroot -p${DB_PASSWORD} -e "SHOW DATABASES;"
 ```
-
-> 💡 원리:
->
-> `.env.local`에 `DB_HOST=localhost`로 설정되어 있으므로, 로컬에서 실행된 앱이 Docker에 떠 있는 MySQL(`3306` 포트)에 자동으로 접속합니다.
 
 ---
 
