@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Put,
   Delete,
   Body,
@@ -10,9 +9,8 @@ import {
   ClassSerializerInterceptor,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserOutDto } from './dto/user-out.dto';
 import { ApiResponseSpec } from '@common/decorators/api-response-spec.decorator';

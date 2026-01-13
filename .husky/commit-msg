@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "📝 커밋 메시지 검증 중..."
+
+# 커밋 메시지 읽기
+COMMIT_MSG=$(cat $1)
+
+# 기본 형식 체크
+if ! echo "$COMMIT_MSG" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|revert)(\(.+\))?: .+"; then
+  echo ""
+  echo "⚠️  권장하지 않는 커밋 메시지 형식입니다"
+  echo ""
+  echo "권장 형식:"
+  echo "  feat(user): implement user domain"
+  echo "  fix(auth): resolve token refresh bug"
+  echo "  chore(husky): setup git hooks"
+  echo ""
+  echo "도메인 단위 커밋을 권장합니다."
+  echo "자세한 내용: docs/GIT_CONVENTION.md"
+  echo ""
+  echo "⚠️  경고: 이 형식을 권장하지만 강제하지는 않습니다"
+  echo ""
+fi
+
+echo "✅ 커밋 메시지 검증 통과\n"

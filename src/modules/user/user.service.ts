@@ -1,15 +1,6 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { Injectable } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
-import bcrypt from 'bcrypt';
-import { PasswordUtil } from '@common/utils/password.util';
 import { UserRepository } from '@modules/user/user.repository';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';

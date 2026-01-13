@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔄 Post-merge 작업 실행 중...\n"
+
+CHANGED_FILES=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)
+
+if echo "$CHANGED_FILES" | grep -q "^package.json$\|^pnpm-lock.yaml$"; then
+  echo "📦 의존성 파일이 변경되었습니다"
+  echo "🔄 자동으로 pnpm install을 실행합니다...\n"
+
+  pnpm install || {
+    echo "❌ 의존성 설치 실패"
+    echo "💡 수동으로 'pnpm install'을 실행하세요\n"
+    exit 1
+  }
+
+  echo "✅ 의존성 설치 완료\n"
+fi
+
+if echo "$CHANGED_FILES" | grep -q "^\.env\.example$"; then
+  echo "⚠️  .env.example이 변경되었습니다"
+  echo "💡 .env 파일을 업데이트하세요\n"
+fi
+
+echo "✅ Post-merge 작업 완료\n"
+

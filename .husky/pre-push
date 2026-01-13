@@ -1,0 +1,64 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Pre-push 검증 시작...\n"
+
+# Step 1: 원격 동기화 확인
+echo "🌐 Step 1/4: 원격 저장소 동기화 확인 중..."
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if git ls-remote --heads origin "$CURRENT_BRANCH" | grep -q "$CURRENT_BRANCH"; then
+  git fetch origin "$CURRENT_BRANCH" 2>/dev/null &
+  FETCH_PID=$!
+
+  REMOTE_BRANCH="origin/$CURRENT_BRANCH"
+
+  if git rev-parse --verify "$REMOTE_BRANCH" >/dev/null 2>&1; then
+    wait $FETCH_PID
+
+    LOCAL_COMMIT=$(git rev-parse HEAD)
+    REMOTE_COMMIT=$(git rev-parse "$REMOTE_BRANCH")
+
+    if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
+      BEHIND=$(git rev-list --count HEAD.."$REMOTE_BRANCH" 2>/dev/null || echo "0")
+
+      if [ "$BEHIND" -gt 0 ]; then
+        echo "⚠️  경고: 로컬 브랜치가 원격보다 $BEHIND 커밋 뒤처져 있습니다."
+        echo "💡 권장: git pull origin $CURRENT_BRANCH"
+        read -p "계속 진행하시겠습니까? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+          echo "❌ Push 취소됨"
+          exit 1
+        fi
+      fi
+    fi
+  fi
+fi
+echo "✅ 원격 동기화 확인 완료\n"
+
+# Step 2: 에러 코드 검증
+echo "📋 Step 2/4: 에러 코드 검증 중..."
+pnpm validate:errors || {
+  echo "❌ 에러 코드 검증 실패"
+  exit 1
+}
+echo "✅ 에러 코드 검증 통과\n"
+
+# Step 3: 전체 테스트
+echo "🧪 Step 3/4: 전체 테스트 실행 중..."
+pnpm test || {
+  echo "❌ 테스트 실패"
+  exit 1
+}
+echo "✅ 테스트 통과\n"
+
+# Step 4: 빌드 검증
+echo "🏗️  Step 4/4: 빌드 검증 중..."
+pnpm build || {
+  echo "❌ 빌드 실패"
+  exit 1
+}
+echo "✅ 빌드 통과\n"
+
+echo "✅ Pre-push 검증 완료! 푸시를 진행합니다.\n"
