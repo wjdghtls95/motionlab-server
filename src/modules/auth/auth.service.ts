@@ -12,8 +12,8 @@ import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 @Injectable()
 export class AuthService {
   constructor(
-    private userRepository: UserRepository,
-    private jwtService: JwtService,
+    private readonly userRepository: UserRepository,
+    private readonly jwtService: JwtService,
   ) {}
 
   /**

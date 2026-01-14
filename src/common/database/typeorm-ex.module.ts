@@ -6,6 +6,7 @@ import { TYPEORM_CUSTOM_REPOSITORY } from '@common/decorators/custom-repository.
 export class TypeOrmExModule {
   public static forCustomRepository<T extends new (...args: any[]) => any>(
     repositories: T[],
+    dataSourceName?: string,
   ): DynamicModule {
     const providers: Provider[] = [];
 
@@ -18,7 +19,7 @@ export class TypeOrmExModule {
 
       providers.push({
         provide: repository,
-        inject: [getDataSourceToken()],
+        inject: [getDataSourceToken(dataSourceName)],
         useFactory: (dataSource: DataSource): typeof repository => {
           const entityManager = dataSource.createEntityManager();
 

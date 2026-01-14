@@ -68,6 +68,19 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CORS_ORIGIN = 'http://localhost:3000';
+
+  // ==================== Redis ====================
+  @IsString()
+  @IsOptional()
+  REDIS_HOST = 'localhost';
+
+  @IsString()
+  @IsOptional()
+  REDIS_PORT = '6379';
+
+  @IsString()
+  @IsOptional()
+  REDIS_PASSWORD: string;
 }
 
 /**

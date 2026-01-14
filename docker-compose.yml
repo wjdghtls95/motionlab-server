@@ -5,10 +5,10 @@ services:
   # NestJS API 서버
   # ========================================
   app:
+    container_name: motionlab-api
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: motionlab-api
     ports:
       - "3000:3000"
     volumes:
@@ -21,10 +21,12 @@ services:
       - ./environments/.env.local
     environment:
       - NODE_ENV=local
+      - PORT=4000
       - DB_HOST=mysql
+      - REDIS_HOST=redis
     depends_on:
       - mysql
-      # - redis  # TODO.. Redis 사용 시 주석 해제
+      - redis
     networks:
       - motionlab-network
     restart: unless-stopped
@@ -55,19 +57,19 @@ services:
     command: --default-authentication-plugin=mysql_native_password
 
   # ========================================
-  # Redis (TODO.. 필요 시 주석 해제)
+  # Redis
   # ========================================
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: motionlab-redis
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     # 데이터 영속성
-  #     - redis_data:/data
-  #   networks:
-  #     - motionlab-network
-  #   restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    container_name: motionlab-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      # 데이터 영속성
+     - redis_data:/data
+    networks:
+      - motionlab-network
+    restart: unless-stopped
 
 # ========================================
 # 볼륨 정의 (데이터 영속성)
