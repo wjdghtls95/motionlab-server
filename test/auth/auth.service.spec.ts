@@ -1,11 +1,11 @@
 import { TestingModule } from '@nestjs/testing';
-import { AuthService } from '@/modules/auth/auth.service';
-import { UserRepository } from '@/modules/user/user.repository';
 import { getTestModule } from '../test-helper/get-test-module';
 import { TestDatabaseHelper } from '../test-helper/test-database.helper';
 import { TestUserHelper } from '../test-helper/test-user.helper';
 import { authMockData } from '../mock-data/auth.mock';
 import { userMockData } from '../mock-data/user.mock';
+import { AuthService } from '@modules/auth/auth.service';
+import { UserRepository } from '@modules/user/user.repository';
 
 describe('AuthService (Integration)', () => {
   let module: TestingModule;

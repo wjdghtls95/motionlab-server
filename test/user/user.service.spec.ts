@@ -1,12 +1,12 @@
 import { TestingModule } from '@nestjs/testing';
-import { UserService } from '@/modules/user/user.service';
-import { UserRepository } from '@/modules/user/user.repository';
 import { getTestModule } from '../test-helper/get-test-module';
 import { TestDatabaseHelper } from '../test-helper/test-database.helper';
 import { TestUserHelper } from '../test-helper/test-user.helper';
 import { userMockData } from '../mock-data/user.mock';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
+import { UserService } from '@modules/user/user.service';
+import { UserRepository } from '@modules/user/user.repository';
 
 describe('UserService (Integration)', () => {
   let module: TestingModule;
