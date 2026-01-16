@@ -106,7 +106,8 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1",
+      "^@app/(.*)$": "<rootDir>/src/$1",
+      "^@core/(.*)$": "<rootDir>/src/core/$1",
       "^@modules/(.*)$": "<rootDir>/src/modules/$1",
       "^@common/(.*)$": "<rootDir>/src/common/$1"
     },

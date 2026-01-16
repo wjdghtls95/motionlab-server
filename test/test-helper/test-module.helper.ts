@@ -2,10 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import appConfig from '@/common/config/app.config';
-import databaseConfig from '@/common/config/database.config';
-import jwtConfig from '@/common/config/jwt.config';
 import { validate } from '@common/validators/env.validator';
+import appConfig from '@common/config/app.config';
+import databaseConfig from '@app/common/config/database.config';
+import jwtConfig from '@common/config/jwt.config';
 
 /**
  * Integration/Unit Test용 TestingModule 생성

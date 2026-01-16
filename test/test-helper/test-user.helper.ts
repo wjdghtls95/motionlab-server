@@ -1,7 +1,7 @@
-import { User } from '@/modules/user/entities/user.entity';
-import { UserRepository } from '@/modules/user/user.repository';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '@modules/user/dto/create-user.dto';
+import { UserRepository } from '@modules/user/user.repository';
+import { User } from '@modules/user/entities/user.entity';
 
 export interface CreateTestUserDto {
   email?: string;
