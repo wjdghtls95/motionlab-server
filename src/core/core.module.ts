@@ -33,18 +33,8 @@ import { RedisFactory } from '@common/database/redis/redis.factory';
       inject: [databaseConfig.KEY],
       useFactory: async (config) => ({
         ...config,
-        autoLoadEntities: true, // Entity 자동 로드
       }),
     }),
-
-    // Redis
-    // RedisModule.forRootAsync({
-    //   inject: [redisConfig.KEY],
-    //   useFactory: async (config) => ({
-    //     type: 'single', // single/cluster
-    //     options: { ...config },
-    //   }),
-    // }),
   ],
   controllers: [
     HealthController, // Health check
