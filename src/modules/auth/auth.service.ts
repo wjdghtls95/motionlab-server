@@ -8,13 +8,30 @@ import { AuthOutDto } from '@modules/auth/dto/auth-out.dto';
 import { UserRepository } from '@modules/user/user.repository';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
+import { Redis } from 'ioredis';
+import { JwtConfigHelper } from '@common/config/redis.config';
+import { ConfigService } from '@nestjs/config';
+import { DateUtil } from '@common/utils/date.util';
+import { User } from '@modules/user/entities/user.entity';
+import { RedisFactory } from '@common/database/redis/redis.factory';
+import { REDIS_DB_NUMBER } from '@common/constants/redis.constant';
 
 @Injectable()
 export class AuthService {
+  private readonly redis: Redis;
+  private readonly jwtConfig: JwtConfigHelper;
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.jwtConfig = JwtConfigHelper.from(this.configService);
+    this.redis = RedisFactory.createRedisClient(
+      REDIS_DB_NUMBER.AUTH,
+      this.configService,
+    );
+  }
 
   /**
    * 회원가입
@@ -41,10 +58,14 @@ export class AuthService {
     await this.userRepository.save(user);
 
     // JWT 토큰 생성
-    const accessToken = this.generateToken(user.id, user.email);
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.email,
+    );
 
-    return new AuthOutDto({
+    return AuthOutDto.of({
       accessToken,
+      refreshToken,
       userId: user.id,
       email: user.email,
       name: user.name,
@@ -73,10 +94,14 @@ export class AuthService {
     }
 
     // JWT 토큰 생성
-    const accessToken = this.generateToken(user.id, user.email);
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.email,
+    );
 
-    return new AuthOutDto({
+    return AuthOutDto.of({
       accessToken,
+      refreshToken,
       userId: user.id,
       email: user.email,
       name: user.name,
@@ -84,14 +109,75 @@ export class AuthService {
   }
 
   /**
-   * JWT 토큰 생성
+   * Refresh Token으로 새로운 토큰 발급
    */
-  private generateToken(userId: number, email: string): string {
-    const payload: JwtPayload = {
-      sub: userId,
-      email,
-    };
+  async issueRefreshToken(refreshToken: string): Promise<AuthOutDto> {
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
+        secret: this.jwtConfig.refreshSecret,
+      });
 
-    return this.jwtService.sign(payload);
+      const storedToken = await this.redis.get(`refresh_token:${payload.sub}`);
+
+      if (!storedToken || storedToken !== refreshToken) {
+        throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_INVALID);
+      }
+
+      const user = await this.userRepository.findById(payload.sub);
+      if (!user) {
+        throw new DomainException(DOMAIN_ERRORS.AUTH_USER_NOT_FOUND);
+      }
+
+      const tokens = await this.generateTokens(user.id, user.email);
+
+      return AuthOutDto.of({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+      });
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_EXPIRED);
+      }
+      throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_INVALID);
+    }
+  }
+
+  /**
+   * 로그아웃
+   */
+  async logout(user: User): Promise<void> {
+    const refreshTokenKey = `refresh_token:${user.id}`;
+    await this.redis.del(refreshTokenKey);
+  }
+
+  /**
+   * Access Token + Refresh Token 생성
+   */
+  private async generateTokens(
+    userId: number,
+    email: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const payload: JwtPayload = { sub: userId, email };
+
+    // Access Token 생성
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.jwtConfig.secret,
+      expiresIn: this.jwtConfig.accessExpiresIn as any,
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.jwtConfig.refreshSecret,
+      expiresIn: this.jwtConfig.refreshExpiresIn as any,
+    });
+
+    // Redis에 저장
+    const ttl = DateUtil.parseExpireTime(this.jwtConfig.refreshExpiresIn);
+
+    await this.redis.setex(`refresh_token:${userId}`, ttl, refreshToken);
+
+    return { accessToken, refreshToken };
   }
 }

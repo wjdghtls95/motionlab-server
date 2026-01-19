@@ -1,11 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseOutDto } from '@common/dto/base-out.dto';
 
-export class AuthOutDto {
+export class AuthOutDto extends BaseOutDto {
   @ApiProperty({
     description: 'JWT 액세스 토큰',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   accessToken: string;
+
+  @ApiProperty({
+    description: 'JWT 리프레시 토큰',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refreshToken: string;
 
   @ApiProperty({
     description: '사용자 ID',
@@ -25,8 +32,4 @@ export class AuthOutDto {
     required: false,
   })
   name?: string;
-
-  constructor(partial: Partial<AuthOutDto>) {
-    Object.assign(this, partial);
-  }
 }

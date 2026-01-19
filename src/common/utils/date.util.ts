@@ -61,4 +61,33 @@ export class DateUtil {
   static isFuture(date: Date): boolean {
     return date.getTime() > Date.now();
   }
+
+  static parseExpireTime(time: string): number {
+    if (!time || time.length < 2) {
+      throw new Error(`유효하지 않은 시간 형식: ${time}`);
+    }
+
+    const unit = time.slice(-1);
+    const value = parseInt(time.slice(0, -1), 10);
+
+    if (isNaN(value) || value <= 0) {
+      throw new Error(`유효하지 않은 시간 값: ${time}`);
+    }
+
+    const unitMap: Record<string, number> = {
+      s: 1, // 초
+      m: 60, // 분
+      h: 60 * 60, // 시간
+      d: 24 * 60 * 60, // 일
+      w: 7 * 24 * 60 * 60, // 주
+    };
+
+    const multiplier = unitMap[unit];
+
+    if (!multiplier) {
+      throw new Error(`지원하지 않는 시간 단위: ${unit} (지원: s, m, h, d, w)`);
+    }
+
+    return value * multiplier;
+  }
 }

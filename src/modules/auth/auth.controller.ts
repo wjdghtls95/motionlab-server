@@ -1,12 +1,12 @@
-import { Controller, Post, Body, Get, Req, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Request, HttpStatus } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { Request } from 'express';
 import { AuthOutDto } from '@modules/auth/dto/auth-out.dto';
 import { ApiResponseSpec } from '@common/decorators/api-response-spec.decorator';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
+import { RefreshTokenDto } from '@modules/auth/dto/refresh-token.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,17 +35,32 @@ export class AuthController {
     return await this.authService.login(loginDto);
   }
 
-  @Get('profile')
+  @Post('refresh')
   @ApiResponseSpec({
-    summary: '내 프로필 조회',
-    auth: true, // JwtAuthGuard + ApiBearerAuth 자동 적용
+    summary: '토큰 재발급',
+    status: HttpStatus.OK,
     type: AuthOutDto,
+    errors: [
+      DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_INVALID,
+      DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_EXPIRED,
+      DOMAIN_ERRORS.AUTH_USER_NOT_FOUND,
+    ],
+  })
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto): Promise<AuthOutDto> {
+    return this.authService.issueRefreshToken(refreshTokenDto.refreshToken);
+  }
+
+  @Post('logout')
+  @ApiResponseSpec({
+    summary: '로그아웃',
+    auth: true,
+    status: HttpStatus.NO_CONTENT,
     errors: [
       DOMAIN_ERRORS.AUTH_TOKEN_INVALID,
       DOMAIN_ERRORS.AUTH_TOKEN_EXPIRED,
     ],
   })
-  async getProfile(@Req() req: Request) {
-    return req.user;
+  async logout(@Request() req): Promise<void> {
+    await this.authService.logout(req.user.id);
   }
 }

@@ -45,6 +45,21 @@ export const DOMAIN_ERRORS = {
     message: '유효하지 않은 토큰입니다',
     status: HttpStatus.UNAUTHORIZED,
   },
+  AUTH_REFRESH_TOKEN_INVALID: {
+    code: 'AUTH_005',
+    message: '유효하지 않은 리프레시 토큰입니다.',
+    status: HttpStatus.UNAUTHORIZED,
+  },
+  AUTH_REFRESH_TOKEN_EXPIRED: {
+    code: 'AUTH_006',
+    message: '리프레시 토큰이 만료되었습니다. 다시 로그인해주세요.',
+    status: HttpStatus.UNAUTHORIZED,
+  },
+  AUTH_USER_NOT_FOUND: {
+    code: 'AUTH_007',
+    message: '사용자를 찾을 수 없습니다.',
+    status: HttpStatus.UNAUTHORIZED,
+  },
 
   // ==================== USER (100~199) ====================
   USER_NOT_FOUND: {
