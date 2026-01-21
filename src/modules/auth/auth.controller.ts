@@ -61,6 +61,6 @@ export class AuthController {
     ],
   })
   async logout(@Request() req): Promise<void> {
-    await this.authService.logout(req.user.id);
+    await this.authService.logout(req.user);
   }
 }

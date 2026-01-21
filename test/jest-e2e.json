@@ -9,8 +9,10 @@
   "roots": ["<rootDir>/test/"],
   "testMatch": null,
   "moduleNameMapper": {
-    "^@/(.*)$": "<rootDir>/src/$1",
+    "^@app/(.*)$": "<rootDir>/src/$1",
+    "^@core/(.*)$": "<rootDir>/src/core/$1",
+    "^@modules/(.*)$": "<rootDir>/src/modules/$1",
     "^@common/(.*)$": "<rootDir>/src/common/$1",
-    "^@modules/(.*)$": "<rootDir>/src/modules/$1"
+    "^test/(.*)$": "<rootDir>/test/$1"
   }
 }

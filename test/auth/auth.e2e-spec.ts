@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getTestModule } from '../test-helper/get-test-module';
 import { TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
-import { UserRepository } from '@modules/user/user.repository';
+import { UserRepository } from '@modules/user/entities/user.repository';
 import { TestDatabaseHelper } from '../test-helper/test-database.helper';
 import { TestUserHelper } from '../test-helper/test-user.helper';
 import { authMockData } from '../mock-data/auth.mock';

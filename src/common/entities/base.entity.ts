@@ -13,4 +13,8 @@ export abstract class BaseEntity {
 
   @UpdateDateColumn({ name: 'update_at' })
   updateAt: Date;
+
+  static create<T>(this: new () => T, partial?: Partial<T>): T {
+    return Object.assign(new this(), partial);
+  }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { UserRepository } from '@modules/user/user.repository';
+import { UserRepository } from '@modules/user/entities/user.repository';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 

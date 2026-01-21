@@ -6,7 +6,7 @@ import { userMockData } from '../mock-data/user.mock';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 import { UserService } from '@modules/user/user.service';
-import { UserRepository } from '@modules/user/user.repository';
+import { UserRepository } from '@modules/user/entities/user.repository';
 
 describe('UserService (Integration)', () => {
   let module: TestingModule;
@@ -26,6 +26,14 @@ describe('UserService (Integration)', () => {
   beforeEach(async () => {
     await TestDatabaseHelper.clearAll();
     TestUserHelper.resetCounter();
+  });
+
+  afterEach(async () => {
+    try {
+      await TestDatabaseHelper.clearAll();
+    } catch (error) {
+      console.error('afterEach 데이터 정리 실패:', error);
+    }
   });
 
   afterAll(async () => {

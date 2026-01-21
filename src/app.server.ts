@@ -48,7 +48,7 @@ export class AppServer {
       .build();
 
     const document = SwaggerModule.createDocument(this.app, config);
-    SwaggerModule.setup('api/docs', this.app, document);
+    SwaggerModule.setup('/api-docs', this.app, document);
   }
 
   /**
@@ -60,6 +60,6 @@ export class AppServer {
     await this.app.listen(port);
 
     console.log(`🚀 Application is running on: http://localhost:${port}`);
-    console.log(`📚 Swagger: http://localhost:${port}/api/docs`);
+    console.log(`📚 Swagger: http://localhost:${port}/api-docs`);
   }
 }

@@ -5,7 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { AuthOutDto } from '@modules/auth/dto/auth-out.dto';
-import { UserRepository } from '@modules/user/user.repository';
+import { UserRepository } from '@modules/user/entities/user.repository';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 import { Redis } from 'ioredis';
@@ -77,23 +77,25 @@ export class AuthService {
    */
   async login(loginDto: LoginDto): Promise<AuthOutDto> {
     // 사용자 조회
-    const user = await this.userRepository.findByEmail(loginDto.email);
+    const user = await this.validateUser(loginDto.email, loginDto.password);
 
-    if (!user) {
-      throw new DomainException(DOMAIN_ERRORS.AUTH_INVALID_CREDENTIALS);
+    // 기존 Refresh Token 확인 및 재사용 시도
+    const existingRefreshToken = await this.getValidRefreshToken(user.id);
+
+    if (existingRefreshToken) {
+      // 유효한 기존 토큰이 있으면 Access Token만 새로 발급
+      const accessToken = this.generateAccessToken(user.id, user.email);
+
+      return AuthOutDto.of({
+        accessToken,
+        refreshToken: existingRefreshToken,
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+      });
     }
 
-    // 비밀번호 검증
-    const isPasswordValid = await PasswordUtil.compare(
-      loginDto.password,
-      user.password,
-    );
-
-    if (!isPasswordValid) {
-      throw new DomainException(DOMAIN_ERRORS.AUTH_INVALID_CREDENTIALS);
-    }
-
-    // JWT 토큰 생성
+    // 기존 토큰이 없거나 만료됨 -> 새 토큰 쌍 발급
     const { accessToken, refreshToken } = await this.generateTokens(
       user.id,
       user.email,
@@ -113,13 +115,15 @@ export class AuthService {
    */
   async issueRefreshToken(refreshToken: string): Promise<AuthOutDto> {
     try {
-      const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
-        secret: this.jwtConfig.refreshSecret,
-      });
+      const payload = this.verifyRefreshToken(refreshToken);
 
       const storedToken = await this.redis.get(`refresh_token:${payload.sub}`);
 
-      if (!storedToken || storedToken !== refreshToken) {
+      if (!storedToken) {
+        throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_INVALID);
+      }
+
+      if (storedToken !== refreshToken) {
         throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_INVALID);
       }
 
@@ -128,11 +132,11 @@ export class AuthService {
         throw new DomainException(DOMAIN_ERRORS.AUTH_USER_NOT_FOUND);
       }
 
-      const tokens = await this.generateTokens(user.id, user.email);
+      const accessToken = this.generateAccessToken(user.id, user.email);
 
       return AuthOutDto.of({
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken,
+        refreshToken,
         userId: user.id,
         email: user.email,
         name: user.name,
@@ -151,6 +155,87 @@ export class AuthService {
   async logout(user: User): Promise<void> {
     const refreshTokenKey = `refresh_token:${user.id}`;
     await this.redis.del(refreshTokenKey);
+  }
+
+  // ======================== Private Helper ========================
+
+  /**
+   * 사용자 인증
+   */
+  private async validateUser(email: string, password: string): Promise<User> {
+    const user = await this.userRepository.findByEmail(email);
+
+    if (!user) {
+      throw new DomainException(DOMAIN_ERRORS.AUTH_INVALID_CREDENTIALS);
+    }
+
+    const isPasswordValid = await PasswordUtil.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      throw new DomainException(DOMAIN_ERRORS.AUTH_INVALID_CREDENTIALS);
+    }
+
+    return user;
+  }
+
+  /**
+   * 유효한 Refresh Token 조회
+   */
+  private async getValidRefreshToken(userId: number): Promise<string | null> {
+    const existingToken = await this.redis.get(`refresh_token:${userId}`);
+
+    if (!existingToken) {
+      return null;
+    }
+
+    try {
+      // 토큰 검증
+      this.jwtService.verify(existingToken, {
+        secret: this.jwtConfig.refreshSecret,
+      });
+
+      // TTL 확인 (30분 이하면 새로 발급)
+      const ttl = await this.redis.ttl(`refresh_token:${userId}`);
+
+      if (ttl < 1800) {
+        // 30분 = 1800초
+        return null;
+      }
+
+      return existingToken;
+    } catch (error) {
+      // 무효한 토큰 삭제
+      await this.redis.del(`refresh_token:${userId}`);
+      return null;
+    }
+  }
+
+  /**
+   * Refresh Token 검증
+   */
+  private verifyRefreshToken(refreshToken: string): JwtPayload {
+    try {
+      return this.jwtService.verify<JwtPayload>(refreshToken, {
+        secret: this.jwtConfig.refreshSecret,
+      });
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_EXPIRED);
+      }
+      throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_INVALID);
+    }
+  }
+
+  /**
+   * Access Token 생성
+   */
+  private generateAccessToken(userId: number, email: string): string {
+    const payload: JwtPayload = { sub: userId, email };
+
+    return this.jwtService.sign(payload, {
+      secret: this.jwtConfig.secret,
+      expiresIn: this.jwtConfig.accessExpiresIn as any,
+    });
   }
 
   /**

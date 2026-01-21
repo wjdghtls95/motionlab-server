@@ -5,8 +5,6 @@ import {
   Delete,
   Body,
   Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -18,7 +16,6 @@ import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 
 @ApiTags('Users')
 @Controller('users')
-@UseInterceptors(ClassSerializerInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

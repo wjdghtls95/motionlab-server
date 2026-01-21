@@ -5,7 +5,7 @@ import { TestUserHelper } from '../test-helper/test-user.helper';
 import { authMockData } from '../mock-data/auth.mock';
 import { userMockData } from '../mock-data/user.mock';
 import { AuthService } from '@modules/auth/auth.service';
-import { UserRepository } from '@modules/user/user.repository';
+import { UserRepository } from '@modules/user/entities/user.repository';
 
 describe('AuthService (Integration)', () => {
   let module: TestingModule;
