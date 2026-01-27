@@ -37,3 +37,8 @@ lerna-debug.log*
 # Environment variables
 environments/.env.*
 !environments/.env.example
+
+# uploads/tmp (video files)
+tmp/
+uploads/
+uploads_test/

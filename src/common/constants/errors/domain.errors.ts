@@ -1,15 +1,15 @@
 import { HttpStatus } from '@nestjs/common';
+import {
+  ERROR_SEVERITY,
+  ErrorSeverity,
+} from '@common/constants/errors/error-severity';
 
 /**
+ * 도메인 에러 정의 타입
  * 에러 심각도
  * - low: 사용자 실수 (WARN 로그)
  * - high: 중요 비즈니스 에러 (ERROR 로그)
  * - critical: 매우 심각 (ERROR 로그 + 즉시 알림)
- */
-export type ErrorSeverity = 'low' | 'high' | 'critical';
-
-/**
- * 도메인 에러 정의 타입
  */
 export type BaseDomainError = {
   code: string;
@@ -99,7 +99,6 @@ export const DOMAIN_ERRORS = {
     message: '지원하지 않는 파일 형식입니다 (MP4, MOV만 지원)',
     status: HttpStatus.BAD_REQUEST,
   },
-
   /**
    * 모션 분석 실패 (중요!)
    * - Analyzer API 장애 또는 영상 분석 불가
@@ -110,7 +109,17 @@ export const DOMAIN_ERRORS = {
     code: 'MOTION_005',
     message: '모션 분석에 실패했습니다',
     status: HttpStatus.BAD_REQUEST,
-    severity: 'high' as const, // 명시적 심각도
+    severity: ERROR_SEVERITY.CRITICAL, // 명시적 심각도
+  },
+  MOTION_RETRY_NOT_ALLOWED: {
+    code: 'MOTION_006',
+    message: '현재 상태에서는 재시도할 수 없습니다.',
+    status: 400,
+  },
+  MOTION_REUPLOAD_REQUIRED: {
+    code: 'MOTION_007',
+    message: '재시도할 수 없습니다. 영상을 다시 업로드해 주세요.',
+    status: 400,
   },
 
   // ==================== SPORT (300~399) ====================
@@ -125,6 +134,33 @@ export const DOMAIN_ERRORS = {
     status: HttpStatus.CONFLICT,
   },
 
+  // ==================== File & Storage (400~499) ====================
+  INVALID_FILE_TYPE: {
+    code: 'FILE_001',
+    message: '지원하지 않는 파일 형식입니다.',
+    status: HttpStatus.BAD_REQUEST,
+    severity: ERROR_SEVERITY.LOW,
+  },
+  FILE_TOO_LARGE: {
+    code: 'FILE_002',
+    message: '파일 크기가 너무 큽니다.',
+    status: HttpStatus.BAD_REQUEST,
+    severity: ERROR_SEVERITY.LOW,
+  },
+  FILE_REQUIRED: {
+    code: 'FILE_003',
+    message: '파일이 필요합니다.',
+    status: HttpStatus.BAD_REQUEST,
+    severity: ERROR_SEVERITY.LOW,
+  },
+
+  STORAGE_UPLOAD_FAILED: {
+    code: 'STORAGE_001',
+    message: '파일 저장에 실패했습니다.',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    severity: ERROR_SEVERITY.HIGH,
+  },
+
   // ==================== 미래 확장 예시 ====================
   /**
    * 결제 실패 (매우 중요!)
@@ -134,7 +170,7 @@ export const DOMAIN_ERRORS = {
     code: 'PAYMENT_001',
     message: '결제에 실패했습니다',
     status: HttpStatus.BAD_REQUEST,
-    severity: 'critical' as const, // 매우 심각
+    severity: ERROR_SEVERITY.CRITICAL, // 매우 심각
   },
 } as const;
 

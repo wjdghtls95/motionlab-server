@@ -3,6 +3,7 @@ import { CoreModule } from '@core/core.module';
 import { UserModule } from '@modules/user/user.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { SportModule } from '@modules/sport/sport.module';
+import { MotionModule } from '@modules/motion/motion.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SportModule } from '@modules/sport/sport.module';
     UserModule,
     AuthModule,
     SportModule,
+    MotionModule,
   ],
 })
 export class AppModule {}

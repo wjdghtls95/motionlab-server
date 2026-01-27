@@ -1,8 +1,6 @@
 import { HttpException } from '@nestjs/common';
-import {
-  DomainError,
-  ErrorSeverity,
-} from '@common/constants/errors/domain.errors';
+import { DomainError } from '@common/constants/errors/domain.errors';
+import { ErrorSeverity } from '@common/constants/errors/error-severity';
 
 /**
  * 도메인(비즈니스) 예외

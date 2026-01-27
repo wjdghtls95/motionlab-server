@@ -12,6 +12,10 @@ import { SystemException } from '../exceptions/system.exception';
 import { SENSITIVE_KEYWORDS } from '../constants/security.constants';
 import { SYSTEM_ERRORS } from '../constants/errors/system.errors';
 import { ERROR_SEVERITY } from '@common/constants/errors/error-severity';
+import * as fs from 'fs/promises';
+import { MulterError } from 'multer';
+import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
+import * as nodePath from 'path';
 
 interface ErrorInfo {
   httpStatus: number;
@@ -35,11 +39,14 @@ export class AllExceptionFilter implements ExceptionFilter {
 
   constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  async catch(exception: unknown, host: ArgumentsHost): Promise<void> {
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
     const request = ctx.getRequest();
     const response = ctx.getResponse();
+
+    // 실패시 Tmp 정리
+    await this.cleanTmpFile(request);
 
     const errorInfo = this.resolveErrorInfo(exception);
 
@@ -53,7 +60,41 @@ export class AllExceptionFilter implements ExceptionFilter {
     };
 
     httpAdapter.reply(response, responseBody, errorInfo.httpStatus);
+
     this.logError(request, responseBody, errorInfo);
+  }
+
+  /**
+   * tmp 파일 정리
+   * - 단일 업로드(request.file.path)만 처리
+   * - tmp 하위만 삭제(안전장치)
+   * - ENOENT(이미 없음)만 조용히 무시, 그 외는 warn 로그
+   */
+  private async cleanTmpFile(req): Promise<void> {
+    const path = req?.file?.path;
+
+    if (!path) return;
+
+    const tmpRoot = nodePath.resolve(process.cwd(), 'tmp') + nodePath.sep;
+    const resolved = nodePath.resolve(path);
+
+    // tmp 밖 삭제 금지
+    if (!resolved.startsWith(tmpRoot)) return;
+
+    try {
+      await fs.unlink(resolved);
+    } catch (e) {
+      // 이미 이동/삭제된 경우는 정상 케이스
+      if (e?.code === 'ENOENT') return;
+
+      // 그 외는 운영 이슈 신호일 수 있으니 warn
+      this.logger.warn({
+        event: 'tmp_cleanup_failed',
+        path: resolved,
+        code: e?.code,
+        message: e?.message,
+      });
+    }
   }
 
   /**
@@ -64,6 +105,11 @@ export class AllExceptionFilter implements ExceptionFilter {
    * Unknown: 무조건 ERROR
    */
   private resolveErrorInfo(exception: unknown): ErrorInfo {
+    // ==================== 0. MulterError ====================
+    if (exception instanceof MulterError) {
+      return this.resolveMulterError(exception);
+    }
+
     // ==================== 1. DomainException ====================
     if (exception instanceof DomainException) {
       const res = exception.getResponse() as any;
@@ -131,6 +177,41 @@ export class AllExceptionFilter implements ExceptionFilter {
       isSystemError: true, // 무조건 error
       cause:
         exception instanceof Error ? exception : new Error(String(exception)),
+    };
+  }
+
+  /**
+   * MulterError -> DOMAIN_ERRORS 매핑
+   * - 2중 if 대신 매핑 테이블로 가독성 확보
+   */
+  private resolveMulterError(exception: MulterError): ErrorInfo {
+    const map: Record<
+      string,
+      { code: string; status: number; message: string }
+    > = {
+      LIMIT_FILE_SIZE: DOMAIN_ERRORS.FILE_TOO_LARGE,
+      // 필요하면 여기에 추가
+      // LIMIT_UNEXPECTED_FILE: DOMAIN_ERRORS.INVALID_FILE_TYPE,
+    };
+
+    const mapped = map[exception.code];
+
+    if (mapped) {
+      return {
+        httpStatus: mapped.status,
+        errorCode: mapped.code,
+        message: mapped.message,
+        isSystemError: false,
+        cause: null,
+      };
+    }
+
+    return {
+      httpStatus: HttpStatus.BAD_REQUEST,
+      errorCode: 'UPLOAD_ERROR',
+      message: exception.message,
+      isSystemError: false,
+      cause: null,
     };
   }
 

@@ -9,6 +9,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByEmail(email: string): Promise<User> {
     return await this.getQueryBuilder
+      .addSelect(`${this.alias}.password`)
       .where(`${this.alias}.email=:email`, { email })
       .getOne();
   }

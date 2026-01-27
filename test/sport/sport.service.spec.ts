@@ -24,9 +24,6 @@ describe('SportService (Integration)', () => {
   });
 
   beforeEach(async () => {
-    // await TestDatabaseHelper.clearAll();
-    // TestSportHelper.resetCounter();
-
     try {
       await TestDatabaseHelper.clearAll(); // QueryRunner 버전 사용 필수
       TestSportHelper.resetCounter();

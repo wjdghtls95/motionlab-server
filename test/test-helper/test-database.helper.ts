@@ -19,6 +19,7 @@ export class TestDatabaseHelper {
     }
 
     const dbName = this.dataSource.options.database as string;
+
     if (!dbName.includes('test')) {
       throw new Error(
         `❌ DANGER: clearAll() can only be used with test database!\n` +

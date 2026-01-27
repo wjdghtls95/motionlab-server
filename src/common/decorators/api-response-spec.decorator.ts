@@ -129,7 +129,7 @@ function createSuccessResponse(options: ApiResponseSpecOptions) {
  * 에러 응답 생성 (도메인 에러 기반)
  */
 function createErrorResponses(errors: DomainError[]) {
-  return errors.map((error) =>
+  return errors.map((error: DomainError) =>
     ApiResponse({
       status: error.status,
       description: error.message,

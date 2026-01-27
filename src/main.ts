@@ -13,4 +13,4 @@ async function bootstrap(): Promise<void> {
   await server.run();
 }
 
-bootstrap();
+void bootstrap();

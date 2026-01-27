@@ -1,6 +1,7 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { BaseEntity } from '@common/entities/base.entity';
 import { SportType } from '@common/constants/sport-types.constant';
+import { Motion } from '@modules/motion/entities/motion.entity';
 
 @Entity('sports')
 export class Sport extends BaseEntity {
@@ -13,7 +14,6 @@ export class Sport extends BaseEntity {
   @Column({ default: true, name: 'is_active' })
   isActive: boolean;
 
-  // TODO.. Motion Domain 만든 후 적용
-  // @OneToMany(() => Motion, (motion) => motion.sport)
-  // motions: Motion[];
+  @OneToMany(() => Motion, (motion) => motion.sport)
+  motions: Motion[];
 }
