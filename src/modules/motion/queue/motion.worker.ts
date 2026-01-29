@@ -68,7 +68,8 @@ export class MotionWorker extends WorkerHost {
 
       const analyzed = await this.analyzerClient.analyze({
         motionId,
-        sportCode: motion.sport.sportType, // Sport 엔티티 필드명 확인 필요
+        sportType: motion.sport.sportType, // Sport 엔티티 필드명 확인 필요
+        subCategory: motion.sport.subCategory,
         videoUrl,
       });
 

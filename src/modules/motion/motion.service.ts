@@ -161,7 +161,8 @@ export class MotionService {
   async getMotionForWork(motionId: number): Promise<Motion> {
     const motion = await this.motionRepository.findWorkById(motionId);
 
-    if (!motion) {
+    // motion or motion 연관된 sport 체크
+    if (!motion || !motion.sport) {
       throw new DomainException(DOMAIN_ERRORS.MOTION_NOT_FOUND);
     }
 
