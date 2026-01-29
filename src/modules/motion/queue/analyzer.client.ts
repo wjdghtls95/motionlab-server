@@ -58,7 +58,6 @@ export class AnalyzerClient {
           code: res.data.error_code || 'SYS_ANALYZER_LOGIC_FAIL',
           message: res.data.message || 'Analyzer returned failure',
           retryable: res.data.retryable ?? true,
-          // ⭐ 심각도 수정: 재시도 불가능하면 심각도 높음
           severity: res.data.retryable ? 'low' : 'high',
           status: res.status,
         };
