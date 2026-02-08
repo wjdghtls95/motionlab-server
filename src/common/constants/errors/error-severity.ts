@@ -5,7 +5,6 @@
  */
 export const ERROR_SEVERITY = {
   LOW: 'low',
-  MEDIUM: 'medium',
   HIGH: 'high',
   CRITICAL: 'critical',
 } as const;
