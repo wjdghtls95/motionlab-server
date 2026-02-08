@@ -12,6 +12,7 @@ import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 import { MotionsController } from '@modules/motion/motion.controller';
 import { MotionService } from '@modules/motion/motion.service';
 import { SportModule } from '@modules/sport/sport.module';
+import { MotionRedisRepository } from '@modules/motion/caches/motion-redis.repository';
 
 @Module({
   imports: [
@@ -26,7 +27,12 @@ import { SportModule } from '@modules/sport/sport.module';
     SportModule,
   ],
   controllers: [MotionsController],
-  providers: [MotionService, MotionWorker, AnalyzerClient],
+  providers: [
+    MotionService,
+    MotionWorker,
+    AnalyzerClient,
+    MotionRedisRepository,
+  ],
   exports: [MotionService],
 })
 export class MotionModule {}

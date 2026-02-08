@@ -6,6 +6,7 @@ import {
   AnalyzePayload,
   AnalyzeResponse,
 } from '@common/interfaces/analyzer.interface';
+import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 
 @Injectable()
 export class AnalyzerClient {
@@ -28,7 +29,7 @@ export class AnalyzerClient {
     this.logger.log({
       event: 'analyzer_request',
       motionId: analyzePayload.motionId,
-      sportType: analyzePayload.sportType,
+      sportType: analyzePayload.sportType.toUpperCase(),
       subCategory: analyzePayload.subCategory,
       videoUrl: this.maskUrl(analyzePayload.videoUrl),
     });
@@ -36,7 +37,7 @@ export class AnalyzerClient {
     try {
       const requestBody = {
         motion_id: analyzePayload.motionId,
-        sport_type: analyzePayload.sportType,
+        sport_type: analyzePayload.sportType.toUpperCase(),
         sub_category: analyzePayload.subCategory,
         video_url: analyzePayload.videoUrl,
       };
@@ -48,7 +49,7 @@ export class AnalyzerClient {
           headers: {
             'X-Internal-API-Key': this.internalApiKey,
           },
-          timeout: 60000,
+          timeout: MOTION_CONSTANTS.ANALYZER_TIMEOUT,
         },
       );
 

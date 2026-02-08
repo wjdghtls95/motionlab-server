@@ -24,4 +24,7 @@ export const MOTION_CONSTANTS = {
   DELETION_GRACE_PERIOD_DAYS: 30,
   CLEANUP_CRON_SCHEDULE: '0 3 * * *', // 매일 새벽 3시
   CLEANUP_BATCH_SIZE: 100,
+
+  // 분석 타임아웃
+  ANALYZER_TIMEOUT: 60000,
 } as const;

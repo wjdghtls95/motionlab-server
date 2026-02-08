@@ -10,6 +10,7 @@ import { StorageService } from '@modules/storage/storage.service';
 import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 import { JOB_ERRORS } from '@common/constants/errors/job.errors';
 import { MotionService } from '@modules/motion/motion.service';
+import { MotionRedisRepository } from '@modules/motion/caches/motion-redis.repository';
 
 // TODO(WS): MotionGateway 스켈레톤은 추가하되, Worker에서 직접 emit은 추후 Notifier/Redis PubSub로 분리 권장
 
@@ -23,6 +24,7 @@ export class MotionWorker extends WorkerHost {
     private readonly analyzerClient: AnalyzerClient,
     private readonly analysisService: AnalysisService,
     private readonly storageService: StorageService,
+    private readonly motionRedisRepository: MotionRedisRepository,
   ) {
     super();
   }
@@ -61,17 +63,31 @@ export class MotionWorker extends WorkerHost {
         // TODO(WS): gateway.emitProgress(motionId, { status: MotionStatus.PROCESSING });
       }
 
-      // Worker 실행 시점에 videoUrl 생성
-      const videoUrl = await this.storageService.getDownloadUrl(
-        motion.videoKey,
-      );
+      let analyzed = await this.motionRedisRepository.get(motionId);
 
-      const analyzed = await this.analyzerClient.analyze({
-        motionId,
-        sportType: motion.sport.sportType, // Sport 엔티티 필드명 확인 필요
-        subCategory: motion.sport.subCategory,
-        videoUrl,
-      });
+      if (analyzed) {
+        this.logger.log({
+          event: 'checkpoint_reused',
+          motionId,
+          attemptsMade: job.attemptsMade,
+        });
+      } else {
+        // Worker 실행 시점에 videoUrl 생성
+        const videoUrl = await this.storageService.getDownloadUrl(
+          motion.videoKey,
+        );
+
+        analyzed = await this.analyzerClient.analyze({
+          motionId,
+          sportType: motion.sport.sportType, // Sport 엔티티 필드명 확인 필요
+          subCategory: motion.sport.subCategory,
+          videoUrl,
+        });
+
+        // AI 분석 완료 즉시 Redis에 저장 (MongoDB 저장 전)
+        // 이후 어떤 단계에서 장애가 나도 재시도 시 여기서 복구
+        await this.motionRedisRepository.save(motionId, analyzed);
+      }
 
       // MongoDB upsert
       await this.analysisService.upsertResult({
@@ -80,6 +96,9 @@ export class MotionWorker extends WorkerHost {
       });
 
       await this.motionService.updateStatus(motionId, MotionStatus.COMPLETED);
+
+      // 저장 성공 후 cache 삭제
+      await this.motionRedisRepository.delete(motionId);
 
       // TODO(WS): gateway.emitCompleted(motionId, { motionId });
 
