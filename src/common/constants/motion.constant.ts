@@ -27,4 +27,7 @@ export const MOTION_CONSTANTS = {
 
   // 분석 타임아웃
   ANALYZER_TIMEOUT: 60000,
+
+  WORKER_LOCK_DURATION: 120000, // 2분: BullMQ job lock 유지
+  WORKER_STALLED_INTERVAL: 120000, // 2분: stalled job 체크 간격
 } as const;

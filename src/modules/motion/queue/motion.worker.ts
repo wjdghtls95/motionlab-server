@@ -14,7 +14,10 @@ import { MotionRedisRepository } from '@modules/motion/caches/motion-redis.repos
 
 // TODO(WS): MotionGateway 스켈레톤은 추가하되, Worker에서 직접 emit은 추후 Notifier/Redis PubSub로 분리 권장
 
-@Processor(MOTION_CONSTANTS.QUEUE_NAME)
+@Processor(MOTION_CONSTANTS.QUEUE_NAME, {
+  lockDuration: MOTION_CONSTANTS.WORKER_LOCK_DURATION,
+  stalledInterval: MOTION_CONSTANTS.WORKER_STALLED_INTERVAL,
+})
 export class MotionWorker extends WorkerHost {
   private readonly logger = new Logger(MotionWorker.name);
 
