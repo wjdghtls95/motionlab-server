@@ -15,13 +15,31 @@ export class AnalysisService {
     motionId: number;
     result: any;
     feedback: any;
+    overallScore: number;
+    improvements: any[];
     promptVersion: string;
   }) {
-    const { motionId, result, feedback, promptVersion } = params;
+    const {
+      motionId,
+      result,
+      feedback,
+      overallScore,
+      improvements,
+      promptVersion,
+    } = params;
 
     await this.model.updateOne(
       { motionId },
-      { $set: { motionId, result, feedback, promptVersion } },
+      {
+        $set: {
+          motionId,
+          result,
+          feedback,
+          overallScore,
+          improvements,
+          promptVersion,
+        },
+      },
       { upsert: true },
     );
   }

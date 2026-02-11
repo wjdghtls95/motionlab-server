@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import {
-  AnalyzePayload,
-  AnalyzeResponse,
-} from '@common/interfaces/analyzer.interface';
+import { AnalyzePayload } from '@common/interfaces/analyzer.interface';
 import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 import { maskUrlUtil } from '@common/utils/mask-url.util';
 import { mapAxiosToJobError } from '@common/mappers/job-error.mapper';
+import {
+  AnalyzedResultDto,
+  AnalyzerRawResponseDto,
+} from '@modules/motion/dto/analyzer-out.dto';
 
 @Injectable()
 export class AnalyzerClient {
@@ -24,9 +25,7 @@ export class AnalyzerClient {
   /**
    * Analyzer 서버에 분석 요청
    */
-  async analyze(
-    analyzePayload: AnalyzePayload,
-  ): Promise<{ result: any; feedback: any; promptVersion: string }> {
+  async analyze(analyzePayload: AnalyzePayload): Promise<AnalyzedResultDto> {
     const { motionId, sportType, subCategory, videoUrl } = analyzePayload;
 
     this.logger.log({
@@ -45,7 +44,7 @@ export class AnalyzerClient {
         video_url: analyzePayload.videoUrl,
       };
 
-      const res = await axios.post<AnalyzeResponse>(
+      const res = await axios.post<AnalyzerRawResponseDto>(
         `${this.baseUrl}/analyze`,
         requestBody,
         {
@@ -72,11 +71,13 @@ export class AnalyzerClient {
       });
 
       // 응답 데이터 매핑 (snake_case -> camelCase)
-      return {
+      return AnalyzedResultDto.of({
         result: res.data.result,
         feedback: res.data.feedback,
+        overallScore: res.data.overall_score,
+        improvements: res.data.improvements || [],
         promptVersion: res.data.prompt_version,
-      };
+      });
     } catch (e) {
       throw mapAxiosToJobError(e);
     }

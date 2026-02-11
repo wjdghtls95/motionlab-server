@@ -14,6 +14,12 @@ export class AnalysisResult {
   @Prop({ type: Object, required: true })
   feedback: any; // 피드백
 
+  @Prop({ type: Number, required: true })
+  overallScore: number;
+
+  @Prop({ type: Array, default: [] })
+  improvements: any[];
+
   @Prop({ required: true })
   promptVersion: string; // 프롬프트 버전
 }

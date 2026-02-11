@@ -19,6 +19,7 @@ export const SUB_CATEGORY = {
   [SPORT_TYPES.GOLF]: {
     DRIVER: 'DRIVER',
     IRON: 'IRON',
+    WEDGE: 'WEDGE',
     PUTTER: 'PUTTER',
   },
   [SPORT_TYPES.WEIGHT]: {
