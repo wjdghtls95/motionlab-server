@@ -23,4 +23,16 @@ export abstract class BaseMotionOutDto extends BaseOutDto {
 
   @ApiProperty({ nullable: true, description: '에러 메시지' })
   errorMessage?: string;
+
+  @ApiProperty({ nullable: true, description: 'AI 피드백' })
+  feedback: any;
+
+  @ApiProperty({ nullable: true, description: '종합 점수' })
+  overallScore: number;
+
+  @ApiProperty({ nullable: true, description: '개선사항 목록' })
+  improvements: any[];
+
+  @ApiProperty({ nullable: true, description: '프롬프트 버전' })
+  promptVersion: string;
 }

@@ -173,26 +173,7 @@ export class MotionsController {
       analysisResult = await this.analysisService.findByMotionId(id);
     }
 
-    // TODO.. of 내에 object 파싱해서 깔끔하게 넣는 게 좋을듯
-    return MotionDetailOutDto.of({
-      // BaseMotionOutDto 상속 필드
-      id: motion.id,
-      status: motion.status,
-      createAt: motion.createAt,
-      completedAt: motion.completedAt,
-      errorCode: motion.errorCode,
-      errorMessage: motion.errorMessage,
-      // Detail 전용 필드
-      sport: {
-        id: motion.sport.id,
-        sportType: motion.sport.sportType, // 여기도 sportType 사용
-      },
-      error: motion.errorCode
-        ? { code: motion.errorCode, message: motion.errorMessage }
-        : null,
-      result: analysisResult?.result ?? null,
-      feedback: analysisResult?.feedback ?? null,
-    });
+    return MotionDetailOutDto.fromMotionAndAnalysis(motion, analysisResult);
   }
 
   @Delete(':id')
