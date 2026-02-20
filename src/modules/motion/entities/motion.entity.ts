@@ -28,14 +28,17 @@ export class Motion extends BaseEntity {
   })
   status: MotionStatus;
 
+  @Column({ name: 'overall_score', nullable: true })
+  overallScore?: number;
+
   @Column({ name: 'video_key', length: 500 })
   videoKey: string;
 
   @Column({ name: 'error_code', length: 30, nullable: true })
-  errorCode: string | null;
+  errorCode?: string | null;
 
   @Column({ name: 'error_message', type: 'text', nullable: true })
-  errorMessage: string | null;
+  errorMessage?: string | null;
 
   @Column({ name: 'completed_at', type: 'timestamp', nullable: true })
   completedAt: Date | null;

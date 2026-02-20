@@ -1,6 +1,7 @@
 import { BaseOutDto } from '@common/dto/base-out.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { MotionStatus } from '@common/constants/motion-status.enum';
+import { Motion } from '@modules/motion/entities/motion.entity';
 
 /**
  * Motion 응답의 공통 필드 -> List, Detail에서 상속받아 중복 제거
@@ -25,14 +26,36 @@ export abstract class BaseMotionOutDto extends BaseOutDto {
   errorMessage?: string;
 
   @ApiProperty({ nullable: true, description: 'AI 피드백' })
-  feedback: any;
+  feedback?: any;
 
   @ApiProperty({ nullable: true, description: '종합 점수' })
-  overallScore: number;
+  overallScore?: number;
 
   @ApiProperty({ nullable: true, description: '개선사항 목록' })
-  improvements: any[];
+  improvements?: any[];
 
-  @ApiProperty({ nullable: true, description: '프롬프트 버전' })
-  promptVersion: string;
+  /**
+   * Motion 엔티티에서 공통 필드 추출
+   */
+  static extractBaseFields(motion: Motion) {
+    return {
+      id: motion.id,
+      status: motion.status,
+      createAt: motion.createAt,
+      completedAt: motion.completedAt,
+      errorCode: motion.errorCode,
+      errorMessage: motion.errorMessage,
+    };
+  }
+
+  /**
+   * 분석 결과에서 공통 필드 추출
+   */
+  static extractAnalysisFields(analysisResult: any) {
+    return {
+      overallScore: analysisResult?.overallScore ?? null,
+      feedback: analysisResult?.feedback ?? null,
+      improvements: analysisResult?.improvements ?? null,
+    };
+  }
 }

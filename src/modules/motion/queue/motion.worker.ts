@@ -98,7 +98,10 @@ export class MotionWorker extends WorkerHost {
         ...analyzed,
       });
 
-      await this.motionService.updateStatus(motionId, MotionStatus.COMPLETED);
+      await this.motionService.completeWithScore(
+        motionId,
+        analyzed.overallScore,
+      );
 
       // 저장 성공 후 cache 삭제
       await this.motionRedisRepository.delete(motionId);

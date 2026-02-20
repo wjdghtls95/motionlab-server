@@ -11,24 +11,16 @@ export class MotionDetailOutDto extends BaseMotionOutDto {
     nullable: true,
     description: '분석 결과 상세 (angles, phases 등)',
   })
-  result: any;
+  result?: any;
 
   static fromMotionAndAnalysis(
     motion: Motion,
     analysisResult: any,
   ): MotionDetailOutDto {
     return MotionDetailOutDto.of({
-      // Base 필드
-      id: motion.id,
-      status: motion.status,
-      createAt: motion.createAt,
-      completedAt: motion.completedAt,
-      errorCode: motion.errorCode,
-      errorMessage: motion.errorMessage,
-      overallScore: analysisResult?.overallScore ?? null,
-      feedback: analysisResult?.feedback ?? null,
-      improvements: analysisResult?.improvements ?? null,
-      promptVersion: analysisResult?.promptVersion ?? null,
+      ...BaseMotionOutDto.extractBaseFields(motion),
+      ...BaseMotionOutDto.extractAnalysisFields(analysisResult),
+
       // Detail 전용
       sport: {
         id: motion.sport.id,

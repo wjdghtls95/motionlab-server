@@ -211,6 +211,28 @@ export class MotionService {
   }
 
   /**
+   * 분석 완료 시 상태 + 점수 동시 저장
+   */
+  async completeWithScore(
+    motionId: number,
+    overallScore: number | null,
+  ): Promise<void> {
+    await this.motionRepository.update(motionId, {
+      status: MotionStatus.COMPLETED,
+      completedAt: new Date(),
+      overallScore: overallScore ?? null,
+      errorCode: null,
+      errorMessage: null,
+    });
+
+    this.logger.log({
+      event: 'motion_completed_with_score',
+      motionId,
+      overallScore,
+    });
+  }
+
+  /**
    * BullMQ enqueue 공통 로직
    * - jobId 중복 방지: 기존 job 있으면 remove 후 재등록
    * - 실패 시 motions에 FAILED + SYS_QUEUE_ENQUEUE_FAILED 기록

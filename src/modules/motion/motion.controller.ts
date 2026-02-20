@@ -129,21 +129,7 @@ export class MotionsController {
     );
 
     return MotionListOutDto.of({
-      items: items.map((motion) =>
-        MotionListItemOutDto.of({
-          // BaseMotionOutDto 상속 필드
-          id: motion.id,
-          status: motion.status,
-          createAt: motion.createAt,
-          completedAt: motion.completedAt,
-          errorCode: motion.errorCode,
-          errorMessage: motion.errorMessage,
-
-          // List 전용 필드
-          sportId: motion.sportId,
-          sportType: motion.sport?.sportType,
-        }),
-      ),
+      items: items.map(MotionListItemOutDto.fromMotion),
       pagination: {
         total,
         page: query.page, // Query 값 그대로 사용
