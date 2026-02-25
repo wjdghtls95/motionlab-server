@@ -1,0 +1,120 @@
+name: ci.yml
+# main 브랜치에 PR을 올리거나 push할 때 실행
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    # GitHub Actions에서 DB 컨테이너를 자동으로 띄워줌
+    # docker-compose 없이 services로 관리
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: motionlab_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand({ping:1})'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    # 환경변수 (테스트용)
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:4000
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: test_password
+      DB_DATABASE: motionlab_test
+      DB_SYNCHRONIZE: true
+      MONGO_URL: mongodb://127.0.0.1:27017/motionlab_test
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      STORAGE_TYPE: local
+      UPLOAD_DIR: ./uploads_test
+      ANALYZER_URL: http://localhost:8000
+      INTERNAL_API_KEY: test-key
+      JWT_SECRET: test-secret
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      SENTRY_DSN: ""
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Node.js 설정
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3. pnpm 설치
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # 4. 의존성 캐시 (재설치 시간 절약)
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # 5. 의존성 설치
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 6. 에러 코드 검증 (pre-push에 있는 것과 동일)
+      - name: Validate error codes
+        run: pnpm validate:errors
+
+      # 7. 린트 검사
+      - name: Lint
+        run: pnpm lint
+
+      # 8. 포맷 검사 (자동 수정 없이 체크만)
+      - name: Format check
+        run: pnpm format:check
+
+      # 9. 단위 + 서비스 테스트
+      - name: Run tests
+        run: pnpm test
+
+      # 10. 빌드 검증
+      - name: Build
+        run: pnpm build
