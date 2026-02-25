@@ -48,6 +48,8 @@
     "@nestjs/swagger": "^11.2.4",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.12",
+    "@sentry/nestjs": "^10.40.0",
+    "@sentry/node": "^10.40.0",
     "axios": "^1.13.3",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.66.5",
@@ -58,13 +60,15 @@
     "ioredis": "^5.9.1",
     "multer": "^2.0.2",
     "mysql2": "^3.16.0",
+    "nest-winston": "^1.10.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
     "socket.io": "^4.8.3",
     "swagger-ui-express": "^5.0.1",
-    "typeorm": "^0.3.28"
+    "typeorm": "^0.3.28",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",

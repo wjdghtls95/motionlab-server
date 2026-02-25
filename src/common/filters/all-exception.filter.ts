@@ -16,6 +16,7 @@ import * as fs from 'fs/promises';
 import { MulterError } from 'multer';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 import * as nodePath from 'path';
+import * as Sentry from '@sentry/node';
 
 interface ErrorInfo {
   httpStatus: number;
@@ -61,7 +62,7 @@ export class AllExceptionFilter implements ExceptionFilter {
 
     httpAdapter.reply(response, responseBody, errorInfo.httpStatus);
 
-    this.logError(request, responseBody, errorInfo);
+    this.logError(request, responseBody, errorInfo, exception);
   }
 
   /**
@@ -70,7 +71,7 @@ export class AllExceptionFilter implements ExceptionFilter {
    * - tmp 하위만 삭제(안전장치)
    * - ENOENT(이미 없음)만 조용히 무시, 그 외는 warn 로그
    */
-  private async cleanTmpFile(req): Promise<void> {
+  private async cleanTmpFile(req: any): Promise<void> {
     const path = req?.file?.path;
 
     if (!path) return;
@@ -223,6 +224,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     request: any,
     responseBody: any,
     errorInfo: ErrorInfo,
+    exception: unknown,
   ): void {
     const logInfo = {
       method: request.method,
@@ -236,6 +238,17 @@ export class AllExceptionFilter implements ExceptionFilter {
     };
 
     if (errorInfo.isSystemError) {
+      // Sentry에 시스템 에러 전송
+      // errorInfo.cause가 있으면 원본 Error 객체 전송 (스택 트레이스 보존)
+      // 없으면 catch의 exception 전송 (Unknown Error 등)
+      Sentry.captureException(errorInfo.cause || exception, {
+        tags: {
+          errorCode: errorInfo.errorCode,
+          httpStatus: String(errorInfo.httpStatus),
+        },
+        extra: { ...logInfo },
+      });
+
       this.logger.error(logInfo, errorInfo.cause?.stack);
     } else {
       this.logger.warn(logInfo);

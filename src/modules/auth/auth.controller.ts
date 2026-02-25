@@ -32,6 +32,7 @@ export class AuthController {
     errors: [DOMAIN_ERRORS.AUTH_EMAIL_ALREADY_EXISTS],
   })
   async login(@Body() loginDto: LoginDto): Promise<AuthOutDto> {
+    throw new Error('Sentry Test');
     return await this.authService.login(loginDto);
   }
 
