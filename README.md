@@ -11,16 +11,17 @@ MotionLab은 사용자가 운동 영상을 업로드하면 AI가 자세를 분�
 
 **핵심 기능**:
 
-- 🎥 운동 영상 업로드 및 비동기 분석 (BullMQ Worker)
-- 🤖 AI 분석 서버 연동 (FastAPI HTTP 호출)
-- 📊 종합 점수, 각도 분석, 개선사항 피드백 저장/조회
-- 🏌️ 7개 종목 지원 (Golf 4 + Weight 3)
-- 🔐 JWT 인증 (Access Token + Refresh Token)
-- 📁 로컬/S3 스토리지 자동 전환
+- 운동 영상 업로드 및 비동기 분석 (BullMQ Worker)
+- AI 분석 서버 연동 (FastAPI HTTP 호출)
+- 종합 점수, 각도 분석, 개선사항 피드백 저장/조회
+- 7개 종목 지원 (Golf 4 + Weight 3)
+- JWT 인증 (Access Token + Refresh Token)
+- 로컬/S3 스토리지 자동 전환
+- Sentry 에러 트래킹 + Winston 구조화 로깅
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph LR
@@ -29,11 +30,12 @@ graph LR
     B --> D[(MySQL<br/>Meta/상태)]
     B --> E[(MongoDB<br/>분석 결과)]
     B --> F[(Redis<br/>BullMQ Queue)]
+    B -->|System Error| G[Sentry]
 ```
 
 ---
 
-## 🔄 Analysis Pipeline
+## Analysis Pipeline
 
 ```mermaid
 flowchart TD
@@ -58,34 +60,44 @@ flowchart TD
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
-![NestJS](https://img.shields.io/badge/NestJS_11.x-E0234E?style=flat-square&logo=nestjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript_5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js_18+-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=flat-square&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js_20-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-F69220?style=flat-square&logo=pnpm&logoColor=white)
 
 ### Database
 
 ![MySQL](https://img.shields.io/badge/MySQL_8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB_7.x-47A248?style=flat-square&logo=mongodb&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis_7.x-DC382D?style=flat-square&logo=redis&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB_7-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis_7-DC382D?style=flat-square&logo=redis&logoColor=white)
 
 ### ORM & ODM
 
-![TypeORM](https://img.shields.io/badge/TypeORM_0.3.x-FE0902?style=flat-square)
-![Mongoose](https://img.shields.io/badge/Mongoose_8.x-880000?style=flat-square)
+![TypeORM](https://img.shields.io/badge/TypeORM-FE0803?style=flat-square&logo=typeorm&logoColor=white)
+![Mongoose](https://img.shields.io/badge/Mongoose-880000?style=flat-square&logo=mongoose&logoColor=white)
 
 ### Queue & Worker
 
-![BullMQ](https://img.shields.io/badge/BullMQ-E34F26?style=flat-square)
+![BullMQ](https://img.shields.io/badge/BullMQ-DC382D?style=flat-square&logo=redis&logoColor=white)
 
 ### Auth & Docs
 
 ![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white)
-![Passport](https://img.shields.io/badge/Passport.js-34E27A?style=flat-square&logo=passport&logoColor=white)
+![Passport](https://img.shields.io/badge/Passport-34E27A?style=flat-square&logo=passport&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=flat-square&logo=swagger&logoColor=black)
+
+### Logging & Monitoring
+
+![Winston](https://img.shields.io/badge/Winston-231F20?style=flat-square&logo=winston&logoColor=white)
+![Sentry](https://img.shields.io/badge/Sentry-362D59?style=flat-square&logo=sentry&logoColor=white)
+
+### DevOps
+
+![Docker](https://img.shields.io/badge/Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 
 ---
 
@@ -95,8 +107,8 @@ flowchart TD
 src/
 ├── common/
 │   ├── config/                    # 환경 설정 (app, database, jwt, redis, s3, storage)
-│   ├── constants/                 # 상수 정의
-│   │   ├── errors/                #   DomainErrors, JobErrors, SystemErrors
+│   ├── constants/
+│   │   ├── errors/                # DomainErrors, SystemErrors, JobErrors
 │   │   ├── motion-status.enum.ts
 │   │   ├── motion.constant.ts
 │   │   ├── sport-types.constant.ts
@@ -104,12 +116,16 @@ src/
 │   ├── database/                  # TypeORM, Redis 설정
 │   ├── decorators/                # @CurrentUser, @ApiResponseSpec, @VideoUploadEndpoint
 │   ├── dto/                       # BaseOutDto, PaginationDto
-│   ├── entities/                  # BaseEntity (createAt 컨벤션)
+│   ├── entities/                  # BaseEntity (createdAt 컨벤션)
 │   ├── exceptions/                # DomainException, SystemException
-│   ├── filters/                   # AllExceptionFilter
+│   ├── filters/                   # AllExceptionFilter (Sentry 연동)
 │   ├── guards/                    # JobErrorGuard
 │   ├── interceptors/              # VideoUploadInterceptor
 │   ├── interfaces/                # AnalyzePayload, AnalyzeResponse
+│   ├── logger/
+│   │   ├── sentry/                # SentryConfig (에러 트래킹 초기화)
+│   │   ├── winston/               # WinstonConfig (JSON/Pretty 로거)
+│   │   └── logger.bootstrap.ts    # Sentry + Winston 통합 부트스트랩
 │   ├── mappers/                   # JobErrorMapper
 │   ├── repositories/              # BaseRepository
 │   ├── utils/                     # date, mask-url, password
@@ -119,18 +135,18 @@ src/
 │   └── core.module.ts
 ├── modules/
 │   ├── analysis/                  # MongoDB 분석 결과 (Mongoose)
-│   │   ├── dto/                   #   UpsertAnalysisResultDto
-│   │   └── schemas/               #   AnalysisResult Schema
+│   │   ├── dto/                   # UpsertAnalysisResultDto
+│   │   └── schemas/               # AnalysisResult Schema
 │   ├── auth/                      # JWT 인증 (login, register, refresh)
-│   │   ├── dto/                   #   login, register, refresh, auth-out
-│   │   ├── guards/                #   JwtAuthGuard
-│   │   └── strategies/            #   JwtStrategy
+│   │   ├── dto/                   # login, register, refresh, auth-out
+│   │   ├── guards/                # JwtAuthGuard
+│   │   └── strategies/            # JwtStrategy
 │   ├── motion/                    # 핵심 모듈
-│   │   ├── caches/                #   Redis 캐시
-│   │   ├── dto/                   #   Upload, List, Detail, Analyzer DTO
-│   │   ├── entities/              #   Motion Entity + Repository
-│   │   ├── gateways/              #   WebSocket (Phase 3 TODO)
-│   │   └── queue/                 #   AnalyzerClient + MotionWorker
+│   │   ├── caches/                # Redis 캐시
+│   │   ├── dto/                   # Upload, List, Detail, Analyzer DTO
+│   │   ├── entities/              # Motion Entity + Repository
+│   │   ├── gateways/              # WebSocket (Phase 3 TODO)
+│   │   └── queue/                 # AnalyzerClient + MotionWorker
 │   ├── sport/                     # 종목 관리 (7종목 CRUD)
 │   ├── storage/                   # 로컬/S3 파일 관리
 │   └── user/                      # 사용자 관리
@@ -141,24 +157,43 @@ src/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
+
+### 사전 준비
+
+- Node.js 20+
+- pnpm
+- Docker Desktop
 
 ### Installation
 
 ```bash
-git clone https://github.com/{username}/motionlab-server.git
+git clone https://github.com/wjdghtls95/motionlab-server.git
 cd motionlab-server
 pnpm install
 
-# 환경 변수
-cp env/.env.example env/.env.development
+# 환경 변수 - .env.local 파일에서 DB 비밀번호, JWT 시크릿 등을 설정합니다.
+cp environments/.env.example environments/.env.local
 ```
 
-### Running
+### Server Running
 
 ```bash
 pnpm start:dev              # 개발 모드
 pnpm build && pnpm start:prod  # 프로덕션
+```
+
+### DB Running
+
+Docker로 MySQL, Redis, MongoDB를 실행합니다. Docker Desktop이 켜져있어야 합니다.
+
+```text
+pnpm db:up
+```
+
+```dockerfile
+# 컨테이너 상태 확인 (3개 모두 healthy면 정상):
+docker compose -f docker-compose.dev.yml ps
 ```
 
 ### API Documentation
@@ -166,12 +201,12 @@ pnpm build && pnpm start:prod  # 프로덕션
 서버 실행 후 Swagger 확인:
 
 ```bash
-http://localhost:{user-port}/api/docs
+http://localhost:{your-port}/api/docs
 ```
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Auth
 
@@ -200,7 +235,7 @@ http://localhost:{user-port}/api/docs
 
 ---
 
-## 🔐 Error Code System
+## Error Code System
 
 | Prefix | Domain   | Retry | Example            |
 | ------ | -------- | ----- | ------------------ |
@@ -211,7 +246,7 @@ http://localhost:{user-port}/api/docs
 
 ---
 
-## 🔗 Related Repositories
+## Related Repositories
 
 | Repository       | Description                | Stack               |
 | ---------------- | -------------------------- | ------------------- |

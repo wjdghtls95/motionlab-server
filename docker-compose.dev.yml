@@ -2,36 +2,6 @@ version: '3.8'
 
 services:
   # ========================================
-  # NestJS API 서버
-  # ========================================
-  app:
-    container_name: motionlab-api
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
-    volumes:
-      # 현재 디렉토리를 /app에 마운트 (Hot Reload)
-      - .:/app
-      # node_modules는 컨테이너 내부 것 사용
-      - /app/node_modules
-    env_file:
-      # environments 디렉토리의 .env.local 사용
-      - ./environments/.env.local
-    environment:
-      - NODE_ENV=local
-      - PORT=4000
-      - DB_HOST=mysql
-      - REDIS_HOST=redis
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - motionlab-network
-    restart: unless-stopped
-
-  # ========================================
   # MySQL
   # ========================================
   mysql:
@@ -55,9 +25,14 @@ services:
       - motionlab-network
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ========================================
-  # Redis
+  # Redis 7 (캐시 + BullMQ 큐)
   # ========================================
   redis:
     image: redis:7-alpine
@@ -70,6 +45,32 @@ services:
     networks:
       - motionlab-network
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # MongoDB 7 (AI 분석 결과 저장)
+  # - 로컬 개발용: 인증 없이 사용
+  # - 프로덕션: MongoDB Atlas (외부 SaaS) 사용 예정
+  # ========================================
+  mongodb:
+    image: mongo:7
+    container_name: motionlab-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - motionlab-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 # ========================================
 # 볼륨 정의 (데이터 영속성)
@@ -77,8 +78,10 @@ services:
 volumes:
   mysql_data:
     driver: local
-  # redis_data:  # TODO.. Redis 사용 시 주석 해제
-  #   driver: local
+  redis_data:
+    driver: local
+  mongodb_data:
+    driver: local
 
 # ========================================
 # 네트워크 정의

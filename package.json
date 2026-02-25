@@ -25,12 +25,10 @@
     "commit": "git commit",
     "commit:quick": "HUSKY=0 git commit",
     "commit:fast": "git commit --no-verify",
-    "docker:up": "docker compose --env-file environments/.env.local up -d",
-    "docker:down": "docker compose --env-file environments/.env.local down",
-    "docker:logs": "docker compose --env-file environments/.env.local logs -f",
-    "docker:restart": "docker compose --env-file environments/.env.local restart",
-    "docker:build": "docker compose --env-file environments/.env.local up -d --build",
-    "db:up": "docker compose --env-file environments/.env.local up -d mysql"
+    "infra:up": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local up -d",
+    "infra:down": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local down",
+    "infra:logs": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local logs -f",
+    "infra:restart": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local restart"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",

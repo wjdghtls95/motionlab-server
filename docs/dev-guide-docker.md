@@ -469,7 +469,7 @@ pnpm docker:down
 docker-compose.yml에 DB 초기화 스크립트가 잘 연결되어 있는지 확인합니다. (최초 실행 시 테이블 자동 생성용)
 
 ```dockerfile
-  # docker-compose.yml 예시
+  # docker-compose.dev.yml 예시
 volumes:
 - mysql_data:/var/lib/mysql
 - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # 👈 이 부분이 있는지 확인
