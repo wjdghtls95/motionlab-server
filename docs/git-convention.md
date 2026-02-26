@@ -14,3 +14,53 @@
 | **revert**   | 이전 커밋 되돌리기           | `revert: revert "feat(user): add user creation"`  |
 
 ---
+
+## Branch Strategy
+
+`main` 브랜치는 보호되어 있으며 직접 push할 수 없습니다.
+
+모든 변경 사항은 PR을 통해 merge되며, CI가 통과해야 merge가 가능합니다.
+
+### 작업 흐름
+
+**1. 브랜치 생성**
+
+```bash
+git checkout -b feature/작업명
+```
+
+**2. 작업 + 커밋**
+
+```bash
+git add .
+git commit -m "feat: 작업 내용"
+```
+
+**3. push**
+
+```bash
+git push origin feature/작업명
+```
+
+**4. GitHub에서 PR 생성 → CI 통과 → Merge**
+
+### 브랜치 네이밍
+
+| 접두사   | 용도           | 예시                   |
+| -------- | -------------- | ---------------------- |
+| feature/ | 새 기능        | feature/auth-refresh   |
+| fix/     | 버그 수정      | fix/redis-connection   |
+| chore/   | 설정, 리팩토링 | chore/update-readme    |
+| ci/      | CI/CD 관련     | ci/add-deploy-pipeline |
+
+### 커밋 컨벤션
+
+| 타입     | 설명             |
+| -------- | ---------------- |
+| feat     | 새 기능          |
+| fix      | 버그 수정        |
+| chore    | 설정, 의존성     |
+| refactor | 리팩토링         |
+| ci       | CI/CD 변경       |
+| docs     | 문서 수정        |
+| test     | 테스트 추가/수정 |
