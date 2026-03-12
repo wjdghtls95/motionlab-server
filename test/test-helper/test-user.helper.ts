@@ -2,6 +2,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '@modules/user/dto/create-user.dto';
 import { UserRepository } from '@modules/user/entities/user.repository';
 import { User } from '@modules/user/entities/user.entity';
+import { UserRole } from '@common/enums/user-role.enum';
 
 export interface CreateTestUserDto {
   email?: string;
@@ -64,6 +65,29 @@ export class TestUserHelper {
     }
 
     return await this.userRepository.save(users);
+  }
+
+  /**
+   * 어드민 유저 생성
+   */
+  static async createAdminUser(createUserDto?: CreateUserDto): Promise<User> {
+    this.userCounter++;
+
+    const email =
+      createUserDto?.email || `test-admin-${this.userCounter}@motionlab.com`;
+    const password = createUserDto?.password || 'Test1234!';
+    const name = createUserDto?.name || `Test Admin ${this.userCounter}`;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      name,
+      role: UserRole.ADMIN,
+    });
+
+    return await this.userRepository.save(user);
   }
 
   /**

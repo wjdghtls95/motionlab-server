@@ -31,4 +31,12 @@ export const authMockData = {
     email: 'notfound@motionlab.com',
     password: 'Test1234!',
   },
+
+  /**
+   * 관리자 로그인 데이터
+   */
+  adminLogin: {
+    email: 'admin@motionlab.com',
+    password: 'Admin1234!',
+  },
 };

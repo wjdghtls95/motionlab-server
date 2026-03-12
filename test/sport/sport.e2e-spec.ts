@@ -11,6 +11,8 @@ import { userMockData } from '../mock-data/user.mock';
 import { authMockData } from '../mock-data/auth.mock';
 import { SportRepository } from '@app/modules/sport/entities/sport.repository';
 import { SPORT_TYPES } from '@common/constants/sport-types.constant';
+import { AllExceptionFilter } from '@common/filters/all-exception.filter';
+import { HttpAdapterHost } from '@nestjs/core';
 
 describe('Sport (E2E)', () => {
   let app: INestApplication;
@@ -18,16 +20,18 @@ describe('Sport (E2E)', () => {
   let sportRepository: SportRepository;
   let userRepository: UserRepository;
   let accessToken: string;
+  let adminToken: string;
 
   beforeAll(async () => {
     module = await getTestModule;
     app = module.createNestApplication();
 
-    // [중요] 실제 환경과 동일한 파이프 설정
+    const httpAdapterHost = app.get(HttpAdapterHost);
+    app.useGlobalFilters(new AllExceptionFilter(httpAdapterHost));
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
-        forbidNonWhitelisted: true, // DTO에 없는 값 오면 에러
+        forbidNonWhitelisted: true,
         transform: true,
       }),
     );
@@ -46,12 +50,19 @@ describe('Sport (E2E)', () => {
     await TestDatabaseHelper.clearAll();
     TestSportHelper.resetCounter();
 
-    // 로그인 및 토큰 발급
+    // 일반 유저 로그인
     await TestUserHelper.createUser(userMockData.validUser);
-    const res = await request(app.getHttpServer())
+    const userRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send(authMockData.validLogin);
-    accessToken = res.body.accessToken;
+    accessToken = userRes.body.accessToken;
+
+    // 관리자 유저 생성 및 로그인
+    await TestUserHelper.createAdminUser(userMockData.adminUser);
+    const adminRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send(authMockData.adminLogin);
+    adminToken = adminRes.body.accessToken;
   });
 
   afterAll(async () => {
@@ -60,19 +71,18 @@ describe('Sport (E2E)', () => {
   });
 
   // 기능 정상 작동 테스트 (Happy Path)
-  // TODO.. 생성 과 같은 관리자 role 인 api 우선 주석처리
   describe('✅ Functional Scenario', () => {
-    it('POST /sports - 종목 생성 성공 (201)', async () => {
+    it('POST /sports - 관리자: 종목 생성 성공 (201)', async () => {
       const res = await request(app.getHttpServer())
         .post('/sports')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(sportMockData.validSport)
         .expect(201);
 
       expect(res.body.sportType).toBe(sportMockData.validSport.sportType);
     });
 
-    it('GET /sports - 전체 조회 성공 (200)', async () => {
+    it('GET /sports - 일반 유저: 전체 조회 성공 (200)', async () => {
       await TestSportHelper.createSports(2);
 
       const res = await request(app.getHttpServer())
@@ -81,6 +91,52 @@ describe('Sport (E2E)', () => {
         .expect(200);
 
       expect(res.body).toHaveLength(2);
+    });
+  });
+
+  // 권한 검사 테스트 (Authorization)
+  describe('🔐 Authorization', () => {
+    let validSportId: number;
+
+    beforeEach(async () => {
+      const sport = await TestSportHelper.createSport(sportMockData.validSport);
+      validSportId = sport.id;
+    });
+
+    it('❌ 403 - 일반 유저 POST /sports 접근 차단', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/sports')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(sportMockData.validSport)
+        .expect(403);
+
+      expect(res.body.error.code).toBe('AUTH_008');
+    });
+
+    it('❌ 403 - 일반 유저 PATCH /sports/:id 접근 차단', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/sports/${validSportId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ description: 'hack' })
+        .expect(403);
+
+      expect(res.body.error.code).toBe('AUTH_008');
+    });
+
+    it('❌ 403 - 일반 유저 DELETE /sports/:id 접근 차단', async () => {
+      const res = await request(app.getHttpServer())
+        .delete(`/sports/${validSportId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(403);
+
+      expect(res.body.error.code).toBe('AUTH_008');
+    });
+
+    it('❌ 401 - 토큰 없이 POST /sports 접근 차단', async () => {
+      await request(app.getHttpServer())
+        .post('/sports')
+        .send(sportMockData.validSport)
+        .expect(401);
     });
   });
 
@@ -96,18 +152,17 @@ describe('Sport (E2E)', () => {
     it('❌ 400 - DTO에 없는 필드 전송 시 차단 (forbidNonWhitelisted)', async () => {
       const garbagePayload = {
         ...sportMockData.validSport,
-        isAdmin: true, // 👈 해킹 의심 필드
-        hackSql: 'DROP TABLE', // 👈 SQL Injection 의심
+        isAdmin: true,
+        hackSql: 'DROP TABLE',
       };
 
       await request(app.getHttpServer())
         .post('/sports')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(garbagePayload)
         .expect(400)
         .expect((res) => {
-          // 에러 메시지에 해당 필드가 허용되지 않음을 명시
-          expect(res.body.message).toEqual(
+          expect(res.body.error.message.errors).toEqual(
             expect.arrayContaining([
               expect.stringMatching(/property .+ should not exist/),
             ]),
@@ -118,14 +173,12 @@ describe('Sport (E2E)', () => {
     it('❌ 400 - Boolean 필드에 문자열 전송', async () => {
       await request(app.getHttpServer())
         .patch(`/sports/${validSportId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({ isActive: 'true' }) // true" 문자열 전송 (boolean이어야 함)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ isActive: 'true' })
         .expect(400);
     });
 
-    // [XSS / SQL Injection] 스크립트 공격
     it('✅ 201 - 특수문자/스크립트 저장 시 실행되지 않고 텍스트로 저장됨', async () => {
-      const sportRepository = app.get<SportRepository>(SportRepository);
       const existingSports = await sportRepository.find();
       const existingTypes = existingSports.map((s) => s.sportType);
       const allTypes = Object.values(SPORT_TYPES);
@@ -133,10 +186,8 @@ describe('Sport (E2E)', () => {
         (type) => !existingTypes.includes(type),
       );
 
-      // 사용 가능한 타입이 있는지 확인
       expect(availableType).toBeDefined();
 
-      // XSS 공격 페이로드
       const xssPayload = {
         sportType: availableType,
         description:
@@ -145,11 +196,10 @@ describe('Sport (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .post('/sports')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(xssPayload)
         .expect(201);
 
-      // 내용이 실행되지 않고 그대로 저장되었는지 확인
       expect(res.body.description).toBe(xssPayload.description);
 
       const getRes = await request(app.getHttpServer())
@@ -159,15 +209,11 @@ describe('Sport (E2E)', () => {
 
       expect(getRes.body.description).toBe(xssPayload.description);
 
-      // DB에 저장된 값도 확인 (Repository 직접 조회)
       const dbSport = await sportRepository.findById(res.body.id);
-
       expect(dbSport.description).toBe(xssPayload.description);
     });
 
     it('✅ 201 - SQL Injection 공격: SQL 명령어가 실행되지 않고 텍스트로 저장됨', async () => {
-      // 사용 가능한 종목 타입 찾기
-      const sportRepository = app.get<SportRepository>(SportRepository);
       const existingSports = await sportRepository.find();
       const existingTypes = existingSports.map((s) => s.sportType);
       const allTypes = Object.values(SPORT_TYPES);
@@ -177,28 +223,23 @@ describe('Sport (E2E)', () => {
 
       expect(availableType).toBeDefined();
 
-      // SQL Injection 공격 페이로드
       const sqlInjectionPayload = {
         sportType: availableType,
         description: "'; DELETE FROM sports; DROP TABLE users; --",
       };
 
-      // 요청 전송 (201 응답 기대)
       const createRes = await request(app.getHttpServer())
         .post('/sports')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(sqlInjectionPayload)
         .expect(201);
 
-      // SQL이 실행되지 않고 문자열로 저장됨
       expect(createRes.body.description).toBe(sqlInjectionPayload.description);
 
-      // 검증 2: sports 테이블이 여전히 존재하는지 확인
       const allSports = await sportRepository.findAllSports();
       expect(allSports).toBeDefined();
       expect(Array.isArray(allSports)).toBe(true);
 
-      // 생성된 종목이 조회 가능한지 확인
       const getRes = await request(app.getHttpServer())
         .get(`/sports/${createRes.body.id}`)
         .set('Authorization', `Bearer ${accessToken}`)
@@ -208,7 +249,6 @@ describe('Sport (E2E)', () => {
     });
 
     it('✅ 201 - 복합 공격: XSS + SQL Injection 동시 시도', async () => {
-      const sportRepository = app.get<SportRepository>(SportRepository);
       const existingSports = await sportRepository.find();
       const existingTypes = existingSports.map((s) => s.sportType);
       const allTypes = Object.values(SPORT_TYPES);
@@ -218,7 +258,6 @@ describe('Sport (E2E)', () => {
 
       expect(availableType).toBeDefined();
 
-      // XSS + SQL Injection 복합 공격
       const complexAttackPayload = {
         sportType: availableType,
         description: `<script>alert(1)</script>'; DELETE FROM users; --<img src=x onerror=alert(2)>`,
@@ -226,30 +265,20 @@ describe('Sport (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .post('/sports')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(complexAttackPayload)
         .expect(201);
 
-      // 공격 코드가 실행되지 않고 텍스트로 저장됨
       expect(res.body.description).toBe(complexAttackPayload.description);
 
-      // DB 안전성 확인
       const allSports = await sportRepository.findAllSports();
-
       expect(allSports.length).toBeGreaterThan(0);
-    });
-
-    it('❌ 401 - 토큰 없이 접근 시 차단', async () => {
-      await request(app.getHttpServer())
-        .post('/sports')
-        .send(sportMockData.validSport)
-        .expect(401);
     });
 
     it('❌ 400 - 필수값에 빈 문자열 전송', async () => {
       await request(app.getHttpServer())
         .post('/sports')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ sportType: '', description: 'test' })
         .expect(400);
     });
