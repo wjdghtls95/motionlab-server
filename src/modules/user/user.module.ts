@@ -8,6 +8,6 @@ import { UserRepository } from '@modules/user/entities/user.repository';
   imports: [TypeOrmExModule.forCustomRepository([UserRepository])],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService, TypeOrmExModule], // Auth 모듈에서 사용
+  exports: [UserService, TypeOrmExModule], // Auth, Admin 모듈에서 사용 (TypeOrmExModule이 UserRepository 포함)
 })
 export class UserModule {}
