@@ -13,6 +13,7 @@ import { JwtConfigHelper } from '@common/config/redis.config';
 import { ConfigService } from '@nestjs/config';
 import { DateUtil } from '@common/utils/date.util';
 import { User } from '@modules/user/entities/user.entity';
+import { UserRole } from '@common/enums/user-role.enum';
 import { RedisFactory } from '@common/database/redis/redis.factory';
 import { REDIS_DB_NUMBER } from '@common/constants/redis.constant';
 
@@ -61,6 +62,7 @@ export class AuthService {
     const { accessToken, refreshToken } = await this.generateTokens(
       user.id,
       user.email,
+      user.role,
     );
 
     return AuthOutDto.of({
@@ -69,6 +71,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
     });
   }
 
@@ -84,7 +87,11 @@ export class AuthService {
 
     if (existingRefreshToken) {
       // 유효한 기존 토큰이 있으면 Access Token만 새로 발급
-      const accessToken = this.generateAccessToken(user.id, user.email);
+      const accessToken = this.generateAccessToken(
+        user.id,
+        user.email,
+        user.role,
+      );
 
       return AuthOutDto.of({
         accessToken,
@@ -92,6 +99,7 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       });
     }
 
@@ -99,6 +107,7 @@ export class AuthService {
     const { accessToken, refreshToken } = await this.generateTokens(
       user.id,
       user.email,
+      user.role,
     );
 
     return AuthOutDto.of({
@@ -107,6 +116,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
     });
   }
 
@@ -132,7 +142,11 @@ export class AuthService {
         throw new DomainException(DOMAIN_ERRORS.AUTH_USER_NOT_FOUND);
       }
 
-      const accessToken = this.generateAccessToken(user.id, user.email);
+      const accessToken = this.generateAccessToken(
+        user.id,
+        user.email,
+        user.role,
+      );
 
       return AuthOutDto.of({
         accessToken,
@@ -140,6 +154,7 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       });
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
@@ -229,8 +244,12 @@ export class AuthService {
   /**
    * Access Token 생성
    */
-  private generateAccessToken(userId: number, email: string): string {
-    const payload: JwtPayload = { sub: userId, email };
+  private generateAccessToken(
+    userId: number,
+    email: string,
+    role: UserRole,
+  ): string {
+    const payload: JwtPayload = { sub: userId, email, role };
 
     return this.jwtService.sign(payload, {
       secret: this.jwtConfig.secret,
@@ -244,8 +263,9 @@ export class AuthService {
   private async generateTokens(
     userId: number,
     email: string,
+    role: UserRole,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const payload: JwtPayload = { sub: userId, email };
+    const payload: JwtPayload = { sub: userId, email, role };
 
     // Access Token 생성
     const accessToken = this.jwtService.sign(payload, {
