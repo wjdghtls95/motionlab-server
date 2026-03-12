@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseOutDto } from '@common/dto/base-out.dto';
+import { UserRole } from '@common/enums/user-role.enum';
 
 export class AuthOutDto extends BaseOutDto {
   @ApiProperty({
@@ -32,4 +33,11 @@ export class AuthOutDto extends BaseOutDto {
     required: false,
   })
   name?: string;
+
+  @ApiProperty({
+    description: '사용자 역할',
+    enum: UserRole,
+    example: UserRole.USER,
+  })
+  role: UserRole;
 }

@@ -5,10 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import { UserRepository } from '@modules/user/entities/user.repository';
 import { DOMAIN_ERRORS } from '@common/constants/errors/domain.errors';
 import { DomainException } from '@common/exceptions/domain.exception';
+import { UserRole } from '@common/enums/user-role.enum';
 
 export interface JwtPayload {
   sub: number; // user id
   email: string;
+  role: UserRole;
 }
 
 @Injectable()

@@ -60,6 +60,11 @@ export const DOMAIN_ERRORS = {
     message: '사용자를 찾을 수 없습니다.',
     status: HttpStatus.UNAUTHORIZED,
   },
+  AUTH_FORBIDDEN: {
+    code: 'AUTH_008',
+    message: '접근 권한이 없습니다.',
+    status: HttpStatus.FORBIDDEN,
+  },
 
   // ==================== USER (100~199) ====================
   USER_NOT_FOUND: {
