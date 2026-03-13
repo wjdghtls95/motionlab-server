@@ -4,6 +4,7 @@ import {
   IsString,
   IsBoolean,
   IsOptional,
+  MinLength,
   validateSync,
 } from 'class-validator';
 
@@ -68,6 +69,16 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CORS_ORIGIN = 'http://localhost:3000';
+
+  // ==================== Analyzer ====================
+  @IsString()
+  @IsOptional()
+  ANALYZER_URL = 'http://localhost:8000';
+
+  /** NestJS ↔ FastAPI 내부 인증 키. 최소 32자 랜덤값 필수 (openssl rand -hex 32) */
+  @IsString()
+  @MinLength(32)
+  INTERNAL_API_KEY: string;
 
   // ==================== Redis ====================
   @IsString()
