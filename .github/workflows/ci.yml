@@ -64,7 +64,8 @@ jobs:
       UPLOAD_DIR: ./uploads_test
       ANALYZER_URL: http://localhost:8000
       INTERNAL_API_KEY: ci-test-key-00000000000000000000000000000000
-      JWT_SECRET: test-secret
+      JWT_SECRET: ci-test-jwt-secret-000000000000000000000000
+      JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-00000000000000000000
       JWT_ACCESS_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       SENTRY_DSN: ""

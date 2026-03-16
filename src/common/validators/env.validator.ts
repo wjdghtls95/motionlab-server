@@ -57,6 +57,11 @@ export class EnvironmentVariables {
   @IsString()
   JWT_SECRET: string;
 
+  /** Refresh Token 서명 키. 최소 32자 랜덤값 필수 (openssl rand -hex 32) */
+  @IsString()
+  @MinLength(32)
+  JWT_REFRESH_SECRET: string;
+
   @IsString()
   @IsOptional()
   JWT_ACCESS_EXPIRES_IN = '15m';
@@ -79,6 +84,10 @@ export class EnvironmentVariables {
   @IsString()
   @MinLength(32)
   INTERNAL_API_KEY: string;
+
+  // ==================== MongoDB ====================
+  @IsString()
+  MONGO_URL: string;
 
   // ==================== Redis ====================
   @IsString()

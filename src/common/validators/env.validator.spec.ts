@@ -13,7 +13,9 @@ const baseConfig = () => ({
   DB_DATABASE: 'motionlab',
   DB_SYNCHRONIZE: 'false',
   JWT_SECRET: 'some-jwt-secret',
+  JWT_REFRESH_SECRET: 'a'.repeat(32), // 최소 32자
   INTERNAL_API_KEY: 'a'.repeat(32), // 최소 32자
+  MONGO_URL: 'mongodb://localhost:27017/motionlab',
 });
 
 describe('env.validator', () => {
@@ -52,6 +54,37 @@ describe('env.validator', () => {
     it('❌ 누락이면 검증 실패', () => {
       const config = baseConfig();
       delete (config as any).INTERNAL_API_KEY;
+      expect(() => validate(config)).toThrow(/Configuration validation error/);
+    });
+  });
+
+  describe('JWT_REFRESH_SECRET', () => {
+    it('✅ 32자 이상이면 유효', () => {
+      const config = baseConfig();
+      expect(() => validate(config)).not.toThrow();
+    });
+
+    it('❌ 31자 이하면 검증 실패', () => {
+      const config = { ...baseConfig(), JWT_REFRESH_SECRET: 'a'.repeat(31) };
+      expect(() => validate(config)).toThrow(/Configuration validation error/);
+    });
+
+    it('❌ 누락이면 검증 실패', () => {
+      const config = baseConfig();
+      delete (config as any).JWT_REFRESH_SECRET;
+      expect(() => validate(config)).toThrow(/Configuration validation error/);
+    });
+  });
+
+  describe('MONGO_URL', () => {
+    it('✅ 유효한 MongoDB URL이면 통과', () => {
+      const config = baseConfig();
+      expect(() => validate(config)).not.toThrow();
+    });
+
+    it('❌ 누락이면 검증 실패', () => {
+      const config = baseConfig();
+      delete (config as any).MONGO_URL;
       expect(() => validate(config)).toThrow(/Configuration validation error/);
     });
   });
