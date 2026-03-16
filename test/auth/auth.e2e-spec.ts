@@ -64,6 +64,39 @@ describe('Auth (E2E)', () => {
         .send(userMockData.validUser)
         .expect(409);
     });
+
+    it('❌ 400 - 취약한 비밀번호(소문자만)', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...authMockData.validRegister, password: 'weakpassword' })
+        .expect(400);
+
+      expect(response.body.code).toBe('AUTH_009');
+    });
+
+    it('❌ 400 - 취약한 비밀번호(특수문자 없음)', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...authMockData.validRegister, password: 'TestTest1' })
+        .expect(400);
+    });
+
+    it('❌ 400 - 취약한 비밀번호(7자 미만)', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...authMockData.validRegister, password: 'Te1!Ab' })
+        .expect(400);
+    });
+
+    it('✅ 201 - 강한 비밀번호 + 중복이메일 검사 우선 (이미 존재하면 409)', async () => {
+      await TestUserHelper.createUser(userMockData.validUser);
+
+      // 약한 비밀번호여도 이메일 중복이 먼저 체크되지 않고 강도 검증이 먼저 — 현재는 이메일 중복 먼저 체크
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...userMockData.validUser })
+        .expect(409);
+    });
   });
 
   describe('POST /auth/login', () => {
