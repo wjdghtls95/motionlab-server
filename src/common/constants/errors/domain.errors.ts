@@ -65,6 +65,13 @@ export const DOMAIN_ERRORS = {
     message: '접근 권한이 없습니다.',
     status: HttpStatus.FORBIDDEN,
   },
+  AUTH_WEAK_PASSWORD: {
+    code: 'AUTH_009',
+    message:
+      '비밀번호는 8자 이상이며 대문자, 소문자, 숫자, 특수문자(@$!%*?&)를 각각 1개 이상 포함해야 합니다.',
+    status: HttpStatus.BAD_REQUEST,
+    severity: ERROR_SEVERITY.LOW,
+  },
 
   // ==================== USER (100~199) ====================
   USER_NOT_FOUND: {

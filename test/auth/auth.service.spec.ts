@@ -58,6 +58,33 @@ describe('AuthService (Integration)', () => {
         authService.register(userMockData.validUser),
       ).rejects.toThrow();
     });
+
+    it('❌ 취약한 비밀번호(소문자만) 등록 실패', async () => {
+      await expect(
+        authService.register({
+          ...authMockData.validRegister,
+          password: 'weakpassword',
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('❌ 취약한 비밀번호(7자) 등록 실패', async () => {
+      await expect(
+        authService.register({
+          ...authMockData.validRegister,
+          password: 'Te1!Ab',
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('❌ 취약한 비밀번호(특수문자 없음) 등록 실패', async () => {
+      await expect(
+        authService.register({
+          ...authMockData.validRegister,
+          password: 'TestTest1',
+        }),
+      ).rejects.toThrow();
+    });
   });
 
   describe('login', () => {

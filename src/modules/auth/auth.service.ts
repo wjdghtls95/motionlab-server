@@ -47,6 +47,11 @@ export class AuthService {
       throw new DomainException(DOMAIN_ERRORS.AUTH_EMAIL_ALREADY_EXISTS);
     }
 
+    // 비밀번호 강도 검증
+    if (!PasswordUtil.validateStrength(registerDto.password)) {
+      throw new DomainException(DOMAIN_ERRORS.AUTH_WEAK_PASSWORD);
+    }
+
     // 비밀번호 해싱
     const hashedPassword = await PasswordUtil.hash(registerDto.password);
 
