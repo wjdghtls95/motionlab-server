@@ -12,7 +12,7 @@ import { JOB_ERRORS } from '@common/constants/errors/job.errors';
 import { MotionService } from '@modules/motion/motion.service';
 import { MotionRedisRepository } from '@modules/motion/caches/motion-redis.repository';
 
-// TODO(WS): MotionGateway 스켈레톤은 추가하되, Worker에서 직접 emit은 추후 Notifier/Redis PubSub로 분리 권장
+// TODO(v2.0): MotionGateway 연결 — Worker에서 직접 emit하지 않고 Redis PubSub 또는 Notifier 서비스로 분리 권장
 
 @Processor(MOTION_CONSTANTS.QUEUE_NAME, {
   lockDuration: MOTION_CONSTANTS.WORKER_LOCK_DURATION,
@@ -22,7 +22,7 @@ export class MotionWorker extends WorkerHost {
   private readonly logger = new Logger(MotionWorker.name);
 
   constructor(
-    // private readonly gateway: MotionGateway, // TODO(WS): 나중에 연결
+    // private readonly gateway: MotionGateway, // TODO(v2.0): MotionModule 등록 후 연결
     private readonly motionService: MotionService,
     private readonly analyzerClient: AnalyzerClient,
     private readonly analysisService: AnalysisService,
@@ -63,7 +63,7 @@ export class MotionWorker extends WorkerHost {
           MotionStatus.PROCESSING,
         );
 
-        // TODO(WS): gateway.emitProgress(motionId, { status: MotionStatus.PROCESSING });
+        // TODO(v2.0): gateway.emitProgress(motionId, { status: MotionStatus.PROCESSING });
       }
 
       let analyzed = await this.motionRedisRepository.get(motionId);
@@ -106,7 +106,7 @@ export class MotionWorker extends WorkerHost {
       // 저장 성공 후 cache 삭제
       await this.motionRedisRepository.delete(motionId);
 
-      // TODO(WS): gateway.emitCompleted(motionId, { motionId });
+      // TODO(v2.0): gateway.emitCompleted(motionId, { motionId });
 
       this.logger.log({ event: 'job_completed', motionId });
     } catch (err) {
@@ -136,7 +136,7 @@ export class MotionWorker extends WorkerHost {
         MotionStatus.RETRYING,
         mapped,
       );
-      // TODO(WS): gateway.emitProgress(motionId, { status: MotionStatus.RETRYING });
+      // TODO(v2.0): gateway.emitProgress(motionId, { status: MotionStatus.RETRYING });
 
       throw err; // 재시도
     }
@@ -148,7 +148,7 @@ export class MotionWorker extends WorkerHost {
       mapped,
     );
 
-    // TODO(WS): gateway.emitFailed(motionId, { code: mapped.code, message: mapped.message });
+    // TODO(v2.0): gateway.emitFailed(motionId, { code: mapped.code, message: mapped.message });
 
     // 재시도 가치 없으면 attempts 남아도 차단
     if (!mapped.retryable) {
