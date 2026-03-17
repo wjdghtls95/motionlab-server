@@ -31,8 +31,11 @@ export class SentryConfig {
       // development: 100% (전체 추적)
       tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
 
-      // 유저 IP, 쿠키 등 PII 전송 허용 (에러 디버깅에 유용)
-      sendDefaultPii: true,
+      // 유저 IP, 쿠키 등 PII 자동 전송 비활성화
+      // 이유: 개인정보처리방침(L-035) 작성 전 국내 개인정보보호법 위반 리스크 방지
+      // 재활성화 조건: L-035 개인정보처리방침에 Sentry IP 수집 고지 완료 후 true로 변경
+      // 대안: Sentry.setUser({ id: userId })로 필요한 식별자만 수동 태깅 (R-041 참고)
+      sendDefaultPii: false,
 
       // test 환경에서는 Sentry 비활성화
       // - test 환경에서 테스트해야될 때 enabled: true로 하고 테스트
