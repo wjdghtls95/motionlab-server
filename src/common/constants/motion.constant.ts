@@ -1,7 +1,8 @@
 export const MOTION_CONSTANTS = {
   // 업로드 설정
   UPLOAD_DIR: './uploads/motions',
-  MAX_FILE_SIZE: 500 * 1024 * 1024, // 500MB
+  // 프론트(config.ts MAX_VIDEO_SIZE_MB: 100) 및 Nginx(client_max_body_size 100m)와 동일한 값 유지
+  MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB
   ALLOWED_EXTENSIONS: ['mp4', 'mov', 'avi'],
   ALLOWED_MIMES: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
 
