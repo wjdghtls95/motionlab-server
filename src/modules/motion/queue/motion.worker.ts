@@ -44,19 +44,21 @@ export class MotionWorker extends WorkerHost {
       attemptsMade: job.attemptsMade,
     });
 
-    const motion = await this.motionService.getMotionForWork(motionId);
-
-    if (motion.status === MotionStatus.COMPLETED) {
-      this.logger.warn({
-        event: 'job_skipped',
-        motionId,
-        reason: 'already_completed',
-      });
-
-      return;
-    }
-
     try {
+      // getMotionForWork를 try 내부에서 호출하여 DB 접근 실패 시에도
+      // handleJobError를 통해 status가 FAILED로 전환되도록 보장
+      const motion = await this.motionService.getMotionForWork(motionId);
+
+      if (motion.status === MotionStatus.COMPLETED) {
+        this.logger.warn({
+          event: 'job_skipped',
+          motionId,
+          reason: 'already_completed',
+        });
+
+        return;
+      }
+
       if (job.attemptsMade === 0) {
         await this.motionService.updateStatus(
           motionId,
@@ -115,7 +117,9 @@ export class MotionWorker extends WorkerHost {
   }
 
   /**
-   * Job Error 조작
+   * Job 에러 처리 — 재시도 가능 여부에 따라 RETRYING 또는 FAILED로 status 전환
+   * updateStatusWithError 자체가 실패해도 에러 로그 후 반드시 throw하여
+   * BullMQ가 잡을 재처리하거나 실패로 기록하도록 보장
    */
   private async handleJobError(job: Job, motionId: number, err: any) {
     const mapped = err?.code ? err : JOB_ERRORS.SYS_UNKNOWN;
@@ -131,33 +135,51 @@ export class MotionWorker extends WorkerHost {
     });
 
     if (mapped.retryable && !isLastAttempt) {
-      await this.motionService.updateStatusWithError(
-        motionId,
-        MotionStatus.RETRYING,
-        mapped,
-      );
-      // TODO(v2.0): gateway.emitProgress(motionId, { status: MotionStatus.RETRYING });
+      try {
+        await this.motionService.updateStatusWithError(
+          motionId,
+          MotionStatus.RETRYING,
+          mapped,
+        );
+      } catch (updateErr) {
+        // status 업데이트 실패는 로그만 남기고 재시도 신호(throw)는 유지
+        this.logger.error({
+          event: 'status_update_failed',
+          motionId,
+          targetStatus: MotionStatus.RETRYING,
+          cause: (updateErr as Error)?.message,
+        });
+      }
 
+      // TODO(v2.0): gateway.emitProgress(motionId, { status: MotionStatus.RETRYING });
       throw err; // 재시도
     }
 
-    // 최종 실패 확정
-    await this.motionService.updateStatusWithError(
-      motionId,
-      MotionStatus.FAILED,
-      mapped,
-    );
+    // 최종 실패 확정 — DB 오류가 발생해도 job은 failed로 처리
+    try {
+      await this.motionService.updateStatusWithError(
+        motionId,
+        MotionStatus.FAILED,
+        mapped,
+      );
+    } catch (updateErr) {
+      this.logger.error({
+        event: 'status_update_failed',
+        motionId,
+        targetStatus: MotionStatus.FAILED,
+        cause: (updateErr as Error)?.message,
+      });
+    }
 
     // TODO(v2.0): gateway.emitFailed(motionId, { code: mapped.code, message: mapped.message });
 
     // 재시도 가치 없으면 attempts 남아도 차단
     if (!mapped.retryable) {
-      await job.discard();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      job.discard();
     }
 
     // job도 failed로 남김 (운영 정합성)
-    // throw err;
-
     const e = new Error(mapped.message);
     (e as any).code = mapped.code;
     throw e;
