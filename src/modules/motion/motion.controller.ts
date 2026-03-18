@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Delete,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { extname } from 'path';
 
 import { StorageService } from '@modules/storage/storage.service';
@@ -39,6 +40,8 @@ export class MotionsController {
     private readonly analysisService: AnalysisService,
   ) {}
 
+  // 시간당 20회 — 대용량 업로드 과도 방지
+  @Throttle({ upload: {} })
   @Post('upload')
   @VideoUploadEndpoint()
   @ApiResponseSpec({

@@ -65,6 +65,13 @@ export const SYSTEM_ERRORS = {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },
 
+  // ==================== RATE LIMIT ====================
+  SYS_TOO_MANY_REQUESTS: {
+    code: 'SYS_040',
+    message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    status: HttpStatus.TOO_MANY_REQUESTS,
+  },
+
   // ==================== GENERAL ====================
   SYS_INTERNAL_SERVER_ERROR: {
     code: 'SYS_999',
