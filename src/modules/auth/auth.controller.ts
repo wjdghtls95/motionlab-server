@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Request, HttpStatus } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -13,6 +14,8 @@ import { RefreshTokenDto } from '@modules/auth/dto/refresh-token.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 분당 5회 — 계정 생성 남용 방지
+  @Throttle({ strict: {} })
   @Post('register')
   @ApiResponseSpec({
     summary: '회원가입',
@@ -24,6 +27,8 @@ export class AuthController {
     return await this.authService.register(registerDto);
   }
 
+  // 분당 10회 — 브루트포스 방지
+  @Throttle({ auth: {} })
   @Post('login')
   @ApiResponseSpec({
     summary: '로그인',
@@ -35,6 +40,8 @@ export class AuthController {
     return await this.authService.login(loginDto);
   }
 
+  // 분당 20회 — refresh는 자동 호출이므로 여유있게
+  @Throttle({ default: {} })
   @Post('refresh')
   @ApiResponseSpec({
     summary: '토큰 재발급',

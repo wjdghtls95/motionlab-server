@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import { ThrottlerException } from '@nestjs/throttler';
 import { DomainException } from '../exceptions/domain.exception';
 import { SystemException } from '../exceptions/system.exception';
 import { SENSITIVE_KEYWORDS } from '../constants/security.constants';
@@ -106,7 +107,18 @@ export class AllExceptionFilter implements ExceptionFilter {
    * Unknown: 무조건 ERROR
    */
   private resolveErrorInfo(exception: unknown): ErrorInfo {
-    // ==================== 0. MulterError ====================
+    // ==================== 0. ThrottlerException (Rate Limit) ====================
+    if (exception instanceof ThrottlerException) {
+      return {
+        httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+        errorCode: SYSTEM_ERRORS.SYS_TOO_MANY_REQUESTS.code,
+        message: SYSTEM_ERRORS.SYS_TOO_MANY_REQUESTS.message,
+        isSystemError: false, // 정상적인 제한 동작이므로 Sentry 전송 불필요
+        cause: null,
+      };
+    }
+
+    // ==================== 1. MulterError ====================
     if (exception instanceof MulterError) {
       return this.resolveMulterError(exception);
     }
