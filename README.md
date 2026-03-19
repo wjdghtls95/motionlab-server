@@ -114,12 +114,12 @@ src/
 │   │   ├── sport-types.constant.ts
 │   │   └── storage-type.enum.ts
 │   ├── database/                  # TypeORM, Redis 설정
-│   ├── decorators/                # @CurrentUser, @ApiResponseSpec, @VideoUploadEndpoint
+│   ├── decorators/                # @CurrentUser, @Roles, @ApiResponseSpec, @VideoUploadEndpoint
 │   ├── dto/                       # BaseOutDto, PaginationDto
 │   ├── entities/                  # BaseEntity (createdAt 컨벤션)
 │   ├── exceptions/                # DomainException, SystemException
 │   ├── filters/                   # AllExceptionFilter (Sentry 연동)
-│   ├── guards/                    # JobErrorGuard
+│   ├── guards/                    # JobErrorGuard, RolesGuard, ThrottlerBehindProxyGuard
 │   ├── interceptors/              # VideoUploadInterceptor
 │   ├── interfaces/                # AnalyzePayload, AnalyzeResponse
 │   ├── logger/
@@ -137,7 +137,8 @@ src/
 │   ├── analysis/                  # MongoDB 분석 결과 (Mongoose)
 │   │   ├── dto/                   # UpsertAnalysisResultDto
 │   │   └── schemas/               # AnalysisResult Schema
-│   ├── auth/                      # JWT 인증 (login, register, refresh)
+│   ├── admin/                     # 관리자 API (역할 변경)
+│   ├── auth/                      # JWT 인증 (login, register, refresh, logout)
 │   │   ├── dto/                   # login, register, refresh, auth-out
 │   │   ├── guards/                # JwtAuthGuard
 │   │   └── strategies/            # JwtStrategy
@@ -215,15 +216,28 @@ http://localhost:{your-port}/api/docs
 | POST   | /auth/register | 회원가입    |
 | POST   | /auth/login    | 로그인      |
 | POST   | /auth/refresh  | 토큰 재발급 |
+| POST   | /auth/logout   | 로그아웃    |
+
+### Users `🔒 JWT 필요`
+
+| Method | Endpoint   | Description      |
+| ------ | ---------- | ---------------- |
+| GET    | /users     | 전체 사용자 조회 |
+| GET    | /users/:id | 사용자 상세 조회 |
+| PUT    | /users/:id | 사용자 정보 수정 |
+| DELETE | /users/:id | 사용자 탈퇴      |
 
 ### Sports
 
-| Method | Endpoint    | Description    |
-| ------ | ----------- | -------------- |
-| GET    | /sports     | 종목 목록 조회 |
-| GET    | /sports/:id | 종목 상세 조회 |
+| Method | Endpoint    | Description              |
+| ------ | ----------- | ------------------------ |
+| GET    | /sports     | 종목 목록 조회           |
+| GET    | /sports/:id | 종목 상세 조회           |
+| POST   | /sports     | 종목 추가 `🔒 ADMIN`     |
+| PATCH  | /sports/:id | 종목 수정 `🔒 ADMIN`     |
+| DELETE | /sports/:id | 종목 비활성화 `🔒 ADMIN` |
 
-### Motions
+### Motions `🔒 JWT 필요`
 
 | Method | Endpoint           | Description                 |
 | ------ | ------------------ | --------------------------- |
@@ -233,16 +247,23 @@ http://localhost:{your-port}/api/docs
 | POST   | /motions/:id/retry | 분석 재시도                 |
 | DELETE | /motions/:id       | 영상 삭제 (비활성화)        |
 
+### Admin `🔒 ADMIN 권한 필요`
+
+| Method | Endpoint              | Description      |
+| ------ | --------------------- | ---------------- |
+| PATCH  | /admin/users/:id/role | 사용자 역할 변경 |
+
 ---
 
 ## Error Code System
 
-| Prefix | Domain   | Retry | Example            |
-| ------ | -------- | ----- | ------------------ |
-| MOT\_  | Motion   | X     | MOTION_NOT_FOUND   |
-| AN\_   | Analyzer | X     | AN_DOWNLOAD_FAIL   |
-| SYS\_  | System   | O     | SYS_TIMEOUT        |
-| AUTH\_ | Auth     | X     | AUTH_TOKEN_INVALID |
+| Prefix   | Domain   | Retry | Example             |
+| -------- | -------- | ----- | ------------------- |
+| AUTH\_   | Auth     | X     | AUTH_TOKEN_INVALID  |
+| MOTION\_ | Motion   | X     | MOTION_NOT_FOUND    |
+| AN\_     | Analyzer | X     | AN_DOWNLOAD_FAIL    |
+| LLM\_    | LLM/GPT  | X     | LLM_GENERATION_FAIL |
+| SYS\_    | System   | O     | SYS_TIMEOUT         |
 
 ---
 
