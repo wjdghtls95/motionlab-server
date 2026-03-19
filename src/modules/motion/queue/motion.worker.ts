@@ -1,6 +1,7 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 import { MotionStatus } from '@common/constants/motion-status.enum';
 
@@ -114,6 +115,61 @@ export class MotionWorker extends WorkerHost {
     } catch (err) {
       await this.handleJobError(job, motionId, err);
     }
+  }
+
+  /**
+   * BullMQ 잡 실패 이벤트 — 모든 시도(retry 포함)마다 호출됨
+   *
+   * 에러 등급 분류 (R-044):
+   * - AN_ 접두사: 사용자 영상 품질 문제 (예상된 실패) → Winston 경고 로그만 기록
+   * - SYS_/LLM_/UNKNOWN: 시스템 장애 → Sentry 캡처
+   *   - 최종 실패(isLastAttempt): Sentry 'fatal' (즉시 알림)
+   *   - 재시도 중 실패: Sentry 'warning' (수집만)
+   *
+   * 전체 에러 등급 체계 확대 적용은 R-052 참고
+   */
+  @OnWorkerEvent('failed')
+  onFailed(job: Job, error: Error): void {
+    const errorCode: string = (error as any).code ?? 'UNKNOWN';
+    const isLastAttempt = job.attemptsMade >= MOTION_CONSTANTS.MAX_ATTEMPTS;
+
+    // AN_ 에러: 사용자 영상 품질 문제 — Sentry 전송 불필요, Winston 로그만
+    if (errorCode.startsWith('AN_')) {
+      this.logger.warn({
+        event: 'job_failed_analysis',
+        motionId: job.data.motionId,
+        jobId: job.id,
+        errorCode,
+        attemptsMade: job.attemptsMade,
+      });
+      return;
+    }
+
+    // SYS_/LLM_/UNKNOWN: 시스템 장애 → Sentry 캡처
+    const sentryLevel = isLastAttempt ? 'fatal' : 'warning';
+
+    Sentry.captureException(error, {
+      level: sentryLevel,
+      extra: {
+        jobId: job.id,
+        motionId: job.data.motionId,
+        errorCode,
+        attemptsMade: job.attemptsMade,
+        isLastAttempt,
+      },
+      tags: {
+        queue: MOTION_CONSTANTS.QUEUE_NAME,
+        errorCode,
+      },
+    });
+
+    this.logger.error({
+      event: 'job_failed_system',
+      motionId: job.data.motionId,
+      errorCode,
+      sentryLevel,
+      isLastAttempt,
+    });
   }
 
   /**

@@ -8,6 +8,11 @@ import { MotionStatus } from '@common/constants/motion-status.enum';
 import { JOB_ERRORS } from '@common/constants/errors/job.errors';
 import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 import { Job } from 'bullmq';
+import * as Sentry from '@sentry/node';
+
+jest.mock('@sentry/node', () => ({
+  captureException: jest.fn(),
+}));
 
 // ──────────────────────────────────────────
 // 의존성 mock 팩토리
@@ -324,7 +329,89 @@ describe('MotionWorker', () => {
   });
 
   // ─────────────────────────────────────────
-  // 7. updateStatusWithError 자체 실패 (안전망 검증)
+  // 7. onFailed — 에러 등급별 Sentry/Winston 분류 (R-044)
+  // ─────────────────────────────────────────
+
+  describe('onFailed 에러 등급 분류 (R-044)', () => {
+    let sentryCapture: jest.SpyInstance;
+
+    beforeEach(() => {
+      sentryCapture = jest
+        .spyOn(Sentry, 'captureException')
+        .mockImplementation(() => '');
+    });
+
+    afterEach(() => {
+      sentryCapture.mockReset();
+    });
+
+    it('✅ AN_ 에러는 Sentry 전송 없이 Winston warn만 기록한다', () => {
+      const job = buildJob({ attemptsMade: 0 } as any);
+      const error = Object.assign(
+        new Error(JOB_ERRORS.AN_NO_KEYPOINTS.message),
+        {
+          code: JOB_ERRORS.AN_NO_KEYPOINTS.code,
+        },
+      );
+
+      worker.onFailed(job, error);
+
+      expect(sentryCapture).not.toHaveBeenCalled();
+    });
+
+    it('✅ SYS_ 에러 + 재시도 중 → Sentry warning으로 캡처한다', () => {
+      const job = buildJob({ attemptsMade: 1 } as any);
+      const error = Object.assign(new Error(JOB_ERRORS.SYS_TIMEOUT.message), {
+        code: JOB_ERRORS.SYS_TIMEOUT.code,
+      });
+
+      worker.onFailed(job, error);
+
+      expect(sentryCapture).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({ level: 'warning' }),
+      );
+    });
+
+    it('✅ SYS_ 에러 + 최종 실패 → Sentry fatal로 캡처한다', () => {
+      const job = buildJob({
+        attemptsMade: MOTION_CONSTANTS.MAX_ATTEMPTS,
+      } as any);
+      const error = Object.assign(
+        new Error(JOB_ERRORS.SYS_ANALYZER_UNREACHABLE.message),
+        {
+          code: JOB_ERRORS.SYS_ANALYZER_UNREACHABLE.code,
+        },
+      );
+
+      worker.onFailed(job, error);
+
+      expect(sentryCapture).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          level: 'fatal',
+          tags: expect.objectContaining({
+            errorCode: JOB_ERRORS.SYS_ANALYZER_UNREACHABLE.code,
+          }),
+        }),
+      );
+    });
+
+    it('✅ code 없는 알 수 없는 에러 → Sentry warning으로 캡처한다', () => {
+      const job = buildJob({ attemptsMade: 0 } as any);
+      const error = new Error('unexpected error');
+
+      worker.onFailed(job, error);
+
+      expect(sentryCapture).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({ level: 'warning' }),
+      );
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // 8. updateStatusWithError 자체 실패 (안전망 검증)
   // handleJobError를 직접 호출하여 status 업데이트 실패 시에도
   // throw를 유지하는지 확인한다
   // ─────────────────────────────────────────
