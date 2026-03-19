@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import { SentryConfig } from './sentry.config';
+import { SentryConfig } from '@common/logger/sentry/sentry.config';
 
 jest.mock('@sentry/node', () => ({
   init: jest.fn(),

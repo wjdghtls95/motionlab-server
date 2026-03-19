@@ -1,4 +1,4 @@
-import { SportSeed } from './sport.seed';
+import { SportSeed } from '@app/database/seeds/sport.seed';
 import { SportRepository } from '@modules/sport/entities/sport.repository';
 import { Sport } from '@modules/sport/entities/sport.entity';
 import {

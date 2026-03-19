@@ -1,4 +1,4 @@
-import { MOTION_CONSTANTS } from './motion.constant';
+import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 
 describe('MOTION_CONSTANTS', () => {
   describe('MAX_FILE_SIZE', () => {
