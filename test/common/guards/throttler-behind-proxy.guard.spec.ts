@@ -1,4 +1,4 @@
-import { ThrottlerBehindProxyGuard } from './throttler-behind-proxy.guard';
+import { ThrottlerBehindProxyGuard } from '@common/guards/throttler-behind-proxy.guard';
 
 // ThrottlerGuard의 의존성(ThrottlerStorage, ThrottlerModuleOptions 등)을 mock으로 대체
 const mockThrottlerOptions = {

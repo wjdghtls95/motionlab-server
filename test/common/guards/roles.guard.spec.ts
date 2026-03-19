@@ -1,6 +1,6 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolesGuard } from './roles.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
 import { UserRole } from '@common/enums/user-role.enum';
 import { DomainException } from '@common/exceptions/domain.exception';
 

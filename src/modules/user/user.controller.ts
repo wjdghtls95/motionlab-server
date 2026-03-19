@@ -45,7 +45,7 @@ export class UserController {
 
   @Get(':id')
   @ApiResponseSpec({
-    summary: '사용자 조회',
+    summary: '사용자 조회(프로필)',
     type: UserOutDto,
     auth: true,
     errors: [DOMAIN_ERRORS.USER_NOT_FOUND, DOMAIN_ERRORS.AUTH_FORBIDDEN],

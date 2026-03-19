@@ -1,6 +1,6 @@
-import { AdminService } from './admin.service';
+import { AdminService } from '@modules/admin/admin.service';
 import { UserRepository } from '@modules/user/entities/user.repository';
-import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UpdateUserRoleDto } from '@modules/admin/dto/update-user-role.dto';
 import { UserRole } from '@common/enums/user-role.enum';
 import { DomainException } from '@common/exceptions/domain.exception';
 import { User } from '@modules/user/entities/user.entity';

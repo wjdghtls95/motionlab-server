@@ -120,26 +120,4 @@ describe('Auth (E2E)', () => {
         .expect(401);
     });
   });
-
-  describe('GET /auth/profile', () => {
-    it('✅ 200 - 프로필 조회 성공', async () => {
-      await TestUserHelper.createUser(userMockData.validUser);
-      const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send(authMockData.validLogin);
-
-      const accessToken = loginResponse.body.accessToken;
-
-      const response = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200);
-
-      expect(response.body.email).toBe(userMockData.validUser.email);
-    });
-
-    it('❌ 401 - 인증되지 않은 요청', async () => {
-      await request(app.getHttpServer()).get('/auth/profile').expect(401);
-    });
-  });
 });

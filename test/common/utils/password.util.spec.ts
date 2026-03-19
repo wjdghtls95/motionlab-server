@@ -1,4 +1,4 @@
-import { PasswordUtil } from './password.util';
+import { PasswordUtil } from '@common/utils/password.util';
 
 describe('PasswordUtil', () => {
   describe('validateStrength', () => {

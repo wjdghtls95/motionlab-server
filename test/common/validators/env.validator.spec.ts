@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { validate } from './env.validator';
+import { validate } from '@common/validators/env.validator';
 
 /**
  * 테스트용 최소 유효 환경변수.

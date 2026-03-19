@@ -32,7 +32,7 @@ export class AuthController {
   @Post('login')
   @ApiResponseSpec({
     summary: '로그인',
-    status: HttpStatus.CREATED,
+    status: HttpStatus.OK,
     type: AuthOutDto,
     errors: [DOMAIN_ERRORS.AUTH_EMAIL_ALREADY_EXISTS],
   })
