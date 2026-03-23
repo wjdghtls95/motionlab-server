@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionFilter } from '@common/filters/all-exception.filter';
+import helmet from 'helmet';
 
 export class AppServer {
   private readonly configService: ConfigService;
@@ -16,11 +17,14 @@ export class AppServer {
    * 서버 미들웨어 및 설정 초기화
    */
   private init(): void {
-    // 1. Global Filter (Exception)
+    // 1. Security Headers (Helmet)
+    this.app.use(helmet());
+
+    // 2. Global Filter (Exception)
     const httpAdapterHost = this.app.get(HttpAdapterHost);
     this.app.useGlobalFilters(new AllExceptionFilter(httpAdapterHost));
 
-    // 2. Global Pipes (Validation)
+    // 3. Global Pipes (Validation)
     this.app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -40,6 +44,9 @@ export class AppServer {
   }
 
   private setupSwagger(): void {
+    // 프로덕션에서는 API 문서 비공개
+    if (process.env.NODE_ENV === 'production') return;
+
     const config = new DocumentBuilder()
       .setTitle('MotionLab API')
       .setDescription('Swing Analysis Platform API')
