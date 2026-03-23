@@ -9,5 +9,8 @@ export default registerAs('database', () => ({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   autoLoadEntities: true, // Entity 자동 로드
-  synchronize: process.env.DB_SYNCHRONIZE === 'true',
+  // 프로덕션에서는 DB_SYNCHRONIZE 값과 무관하게 항상 false (스키마 자동 변경 방지)
+  synchronize:
+    process.env.NODE_ENV !== 'production' &&
+    process.env.DB_SYNCHRONIZE === 'true',
 }));
