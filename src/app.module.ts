@@ -28,28 +28,20 @@ import { ThrottlerBehindProxyGuard } from '@common/guards/throttler-behind-proxy
     //     ),
     //   }),
     // }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60000, // 1분 (ms)
-        limit: 100, // 분당 100회 (기본 상한)
+    ThrottlerModule.forRootAsync({
+      useFactory: () => {
+        // local/test 환경에서는 Rate Limit 사실상 무제한 (개발 편의)
+        const isDevEnv = ['local', 'test'].includes(process.env.NODE_ENV ?? '');
+        const limit = (prod: number) => (isDevEnv ? 100000 : prod);
+
+        return [
+          { name: 'default', ttl: 60000, limit: limit(100) }, // 분당 100회
+          { name: 'auth', ttl: 60000, limit: limit(10) }, // 분당 10회
+          { name: 'strict', ttl: 60000, limit: limit(5) }, // 분당 5회 (register)
+          { name: 'upload', ttl: 3600000, limit: limit(20) }, // 시간당 20회
+        ];
       },
-      {
-        name: 'auth',
-        ttl: 60000, // 1분
-        limit: 10, // 분당 10회 (auth 엔드포인트용)
-      },
-      {
-        name: 'strict',
-        ttl: 60000, // 1분
-        limit: 5, // 분당 5회 (register 전용)
-      },
-      {
-        name: 'upload',
-        ttl: 3600000, // 1시간
-        limit: 20, // 시간당 20회
-      },
-    ]),
+    }),
 
     // Core Module
     CoreModule,
