@@ -13,6 +13,16 @@ export interface BaseJobError {
 }
 
 export const JOB_ERRORS = {
+  // ==================== 시스템 에러: 잡 데이터 검증 (재시도 X) ====================
+
+  /** BullMQ job.data.motionId가 NaN 또는 비정상 값 — 재시도해도 동일 결과 */
+  SYS_INVALID_JOB_DATA: {
+    code: 'SYS_001',
+    message: '잡 데이터가 유효하지 않습니다.',
+    retryable: false,
+    severity: ERROR_SEVERITY.HIGH,
+  },
+
   // ==================== 시스템 에러: Backend 내부 (재시도 O) ====================
 
   /** BullMQ 큐 등록 실패 — Backend 내부에서만 발생 */

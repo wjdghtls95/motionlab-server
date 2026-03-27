@@ -138,7 +138,42 @@ describe('MotionWorker', () => {
   });
 
   // ─────────────────────────────────────────
-  // 2. 이미 COMPLETED → 스킵
+  // 2. motionId 검증 실패 → 즉시 실패
+  // ─────────────────────────────────────────
+
+  describe('motionId 검증 (R-080)', () => {
+    it.each([
+      ['undefined', undefined],
+      ['null', null],
+      ['문자열', 'abc'],
+      ['0', 0],
+      ['음수', -1],
+    ])(
+      '❌ motionId가 %s이면 DB를 호출하지 않고 job.discard() 후 throw한다',
+      async (_label, invalidId) => {
+        const job = buildJob({ data: { motionId: invalidId } } as any);
+
+        await expect(worker.process(job)).rejects.toThrow();
+
+        expect(motionService.getMotionForWork).not.toHaveBeenCalled();
+        expect(job.discard).toHaveBeenCalled();
+      },
+    );
+
+    it('✅ motionId가 유효한 양의 정수이면 정상 처리를 계속한다', async () => {
+      const job = buildJob({ data: { motionId: 42 } } as any);
+      motionService.getMotionForWork.mockResolvedValue(
+        buildMotion(MotionStatus.COMPLETED),
+      );
+
+      await worker.process(job);
+
+      expect(motionService.getMotionForWork).toHaveBeenCalledWith(42);
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // 3. 이미 COMPLETED → 스킵
   // ─────────────────────────────────────────
 
   describe('COMPLETED 상태 스킵', () => {
