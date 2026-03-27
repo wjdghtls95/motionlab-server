@@ -37,6 +37,18 @@ export class MotionWorker extends WorkerHost {
 
     const motionId = Number(job.data.motionId);
 
+    // motionId가 NaN이면 DB 쿼리 자체가 불가능 — 재시도 없이 즉시 실패 처리
+    if (isNaN(motionId) || motionId <= 0) {
+      this.logger.error({
+        event: 'invalid_job_data',
+        rawMotionId: job.data.motionId,
+        jobId: job.id,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      job.discard();
+      throw new Error(JOB_ERRORS.SYS_INVALID_JOB_DATA.message);
+    }
+
     this.logger.log({
       event: 'job_started',
       motionId,
