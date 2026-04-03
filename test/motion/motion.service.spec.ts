@@ -94,6 +94,25 @@ describe('MotionService (Integration)', () => {
       expect(job?.data).toEqual({ motionId: motion.id });
     });
 
+    it('❌ enqueue 실패 후 updateStatusWithError도 실패해도 에러 전파 없이 motion 반환해야 한다', async () => {
+      const user = await TestUserHelper.createUser(userMockData.validUser);
+      const sport = await TestSportHelper.createSport(sportMockData.validSport);
+
+      jest.spyOn(queue, 'add').mockRejectedValueOnce(new Error('Redis down'));
+      jest
+        .spyOn(motionRepository, 'updateById')
+        .mockRejectedValueOnce(new Error('DB down'));
+
+      const motion = await motionService.createAndEnqueue({
+        userId: user.id,
+        sportId: sport.id,
+        videoKey: 'motions/u1/golf/sample.mp4',
+        storageType: StorageType.LOCAL,
+      });
+
+      expect(motion.id).toBeDefined();
+    });
+
     it('❌ sportId가 없으면 DomainException(SPORT_NOT_FOUND)이어야 한다', async () => {
       const user = await TestUserHelper.createUser(userMockData.validUser);
 

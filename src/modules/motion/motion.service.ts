@@ -277,12 +277,18 @@ export class MotionService {
         });
       });
 
-      // 정책: motion 삭제 X, FAILED 기록
+      // 정책: motion 삭제 X, FAILED 기록 — DB 장애 시에도 에러 전파 차단
       await this.updateStatusWithError(
         motionId,
         MotionStatus.FAILED,
         JOB_ERRORS.SYS_QUEUE_ENQUEUE_FAILED,
-      );
+      ).catch((err) => {
+        this.logger.error({
+          event: 'status_update_failed_after_enqueue_error',
+          motionId,
+          message: err?.message,
+        });
+      });
 
       return false;
     }
