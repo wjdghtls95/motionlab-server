@@ -162,6 +162,9 @@ export class AuthService {
         role: user.role,
       });
     } catch (error) {
+      if (error instanceof DomainException) {
+        throw error;
+      }
       if (error.name === 'TokenExpiredError') {
         throw new DomainException(DOMAIN_ERRORS.AUTH_REFRESH_TOKEN_EXPIRED);
       }
