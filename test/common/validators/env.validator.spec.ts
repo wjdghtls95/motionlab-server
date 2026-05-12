@@ -16,6 +16,7 @@ const baseConfig = () => ({
   JWT_REFRESH_SECRET: 'a'.repeat(32), // 최소 32자
   INTERNAL_API_KEY: 'a'.repeat(32), // 최소 32자
   MONGO_URL: 'mongodb://localhost:27017/motionlab',
+  CORS_ORIGIN: 'http://localhost:4000',
 });
 
 describe('env.validator', () => {
@@ -85,6 +86,19 @@ describe('env.validator', () => {
     it('❌ 누락이면 검증 실패', () => {
       const config = baseConfig();
       delete (config as any).MONGO_URL;
+      expect(() => validate(config)).toThrow(/Configuration validation error/);
+    });
+  });
+
+  describe('CORS_ORIGIN', () => {
+    it('✅ 명시적 값 설정 시 통과', () => {
+      const config = { ...baseConfig(), CORS_ORIGIN: 'https://motionlab.io' };
+      expect(() => validate(config)).not.toThrow();
+    });
+
+    it('❌ 누락이면 검증 실패', () => {
+      const config = baseConfig();
+      delete (config as any).CORS_ORIGIN;
       expect(() => validate(config)).toThrow(/Configuration validation error/);
     });
   });

@@ -72,8 +72,7 @@ export class EnvironmentVariables {
 
   // ==================== CORS ====================
   @IsString()
-  @IsOptional()
-  CORS_ORIGIN = 'http://localhost:3000';
+  CORS_ORIGIN: string;
 
   // ==================== Analyzer ====================
   @IsString()

@@ -31,6 +31,7 @@ import { User } from '@modules/user/entities/user.entity';
 import { MotionDetailOutDto } from '@modules/motion/dto/motion-detail-out.dto';
 import { MotionStatus } from '@common/constants/motion-status.enum';
 import { MotionService } from '@modules/motion/motion.service';
+import { Motion } from '@modules/motion/entities/motion.entity';
 
 @Controller('motions')
 export class MotionsController {
@@ -74,12 +75,18 @@ export class MotionsController {
       contentType: file.mimetype,
     });
 
-    const motion = await this.motionService.createAndEnqueue({
-      userId: user.id,
-      sportId: uploadMotionDto.sportId,
-      videoKey,
-      storageType,
-    });
+    let motion: Motion;
+    try {
+      motion = await this.motionService.createAndEnqueue({
+        userId: user.id,
+        sportId: uploadMotionDto.sportId,
+        videoKey,
+        storageType,
+      });
+    } catch (error) {
+      await this.storageService.deleteByKey(videoKey).catch(() => undefined);
+      throw error;
+    }
 
     return MotionUploadOutDto.of({
       motionId: motion.id,
