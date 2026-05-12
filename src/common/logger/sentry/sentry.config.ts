@@ -25,6 +25,7 @@ export class SentryConfig {
 
       // 환경 구분 (Sentry 대시보드에서 필터링 가능)
       environment: process.env.NODE_ENV || 'local',
+      serverName: 'motionlab-server',
 
       // Performance 트레이싱 샘플링 비율
       // production: 20% (무료 플랜 월 10,000건 한도 절약)
