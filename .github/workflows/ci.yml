@@ -57,6 +57,7 @@ jobs:
       DB_PASSWORD: test_password
       DB_DATABASE: motionlab_test
       DB_SYNCHRONIZE: true
+      DB_LOGGING: "false"
       MONGO_URL: mongodb://127.0.0.1:27017/motionlab_test
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
