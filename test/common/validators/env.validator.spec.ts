@@ -12,6 +12,7 @@ const baseConfig = () => ({
   DB_PASSWORD: 'password',
   DB_DATABASE: 'motionlab',
   DB_SYNCHRONIZE: 'false',
+  DB_LOGGING: 'false',
   JWT_SECRET: 'some-jwt-secret',
   JWT_REFRESH_SECRET: 'a'.repeat(32), // 최소 32자
   INTERNAL_API_KEY: 'a'.repeat(32), // 최소 32자
