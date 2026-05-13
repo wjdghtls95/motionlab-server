@@ -1,4 +1,4 @@
-import { plainToInstance } from 'class-transformer';
+import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsEnum,
   IsString,
@@ -45,13 +45,13 @@ export class EnvironmentVariables {
   @IsString()
   DB_DATABASE: string;
 
-  @IsString()
-  @IsOptional()
-  DB_SYNCHRONIZE = false;
-
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
-  @IsOptional()
-  DB_LOGGING = false;
+  DB_SYNCHRONIZE: boolean;
+
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  DB_LOGGING: boolean;
 
   // ==================== JWT ====================
   @IsString()
