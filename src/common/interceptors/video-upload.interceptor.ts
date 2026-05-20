@@ -1,26 +1,23 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import { tmpdir } from 'os';
 import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 import * as fs from 'node:fs';
 
-/**
- * 파일 업로드 인터셉터 팩토리
- * 환경 무관: 모든 환경에서 ./tmp 임시 저장
- */
+const UPLOAD_TMP_DIR = join(tmpdir(), 'motionlab-uploads');
+
 export function VideoUploadInterceptor() {
   return FileInterceptor('video', {
     storage: diskStorage({
-      // destination: './tmp', // 모든 환경 공통 임시 저장소
       destination: (req, file, cb) => {
         try {
-          fs.mkdirSync('./tmp', { recursive: true });
-
-          cb(null, './tmp');
+          fs.mkdirSync(UPLOAD_TMP_DIR, { recursive: true });
+          cb(null, UPLOAD_TMP_DIR);
         } catch (e) {
-          cb(e as Error, './tmp');
+          cb(e as Error, UPLOAD_TMP_DIR);
         }
-      }, // 모든 환경 공통 임시 저장소
+      },
       filename: (req, file, cb) => {
         const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
