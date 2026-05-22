@@ -7,7 +7,8 @@ import {
 export interface BaseJobError {
   code: string;
   message: string;
-  retryable: boolean;
+  /** 생략하면 false — 새 에러 추가 시 실수로 재시도가 무한 루프되는 사고를 예방 */
+  retryable?: boolean;
   severity?: ErrorSeverity;
   status?: HttpStatus;
 }
