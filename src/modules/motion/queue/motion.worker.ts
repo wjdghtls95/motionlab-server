@@ -146,7 +146,7 @@ export class MotionWorker extends WorkerHost {
       isLastAttempt,
     });
 
-    if (mapped.retryable && !isLastAttempt) {
+    if ((mapped.retryable ?? false) && !isLastAttempt) {
       try {
         await this.motionService.updateStatusWithError(
           motionId,
@@ -186,7 +186,7 @@ export class MotionWorker extends WorkerHost {
     // TODO(v2.0): gateway.emitFailed(motionId, { code: mapped.code, message: mapped.message });
 
     // 재시도 가치 없으면 attempts 남아도 차단
-    if (!mapped.retryable) {
+    if (!(mapped.retryable ?? false)) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       job.discard();
     }

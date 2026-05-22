@@ -8,10 +8,6 @@ import { BaseJobError } from '@common/constants/errors/job.errors';
  */
 export function isBaseJobError(err: unknown): err is BaseJobError {
   return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    'retryable' in err &&
-    'message' in err
+    typeof err === 'object' && err !== null && 'code' in err && 'message' in err
   );
 }
