@@ -10,6 +10,7 @@ const mockSportRepository = () => ({
   count: jest.fn(),
   create: jest.fn(),
   save: jest.fn(),
+  update: jest.fn(),
 });
 
 describe('SportSeed', () => {
@@ -26,6 +27,7 @@ describe('SportSeed', () => {
     it('✅ 테이블이 비어있으면 7개 종목을 삽입한다', async () => {
       sportRepository.count.mockResolvedValue(0);
       sportRepository.save.mockResolvedValue([]);
+      sportRepository.update.mockResolvedValue({ affected: 3 });
 
       await seed.onApplicationBootstrap();
 
@@ -39,6 +41,7 @@ describe('SportSeed', () => {
     it('✅ Golf 4종목이 모두 포함된다', async () => {
       sportRepository.count.mockResolvedValue(0);
       sportRepository.save.mockResolvedValue([]);
+      sportRepository.update.mockResolvedValue({ affected: 3 });
 
       await seed.onApplicationBootstrap();
 
@@ -61,6 +64,7 @@ describe('SportSeed', () => {
     it('✅ Weight 3종목이 모두 포함된다', async () => {
       sportRepository.count.mockResolvedValue(0);
       sportRepository.save.mockResolvedValue([]);
+      sportRepository.update.mockResolvedValue({ affected: 3 });
 
       await seed.onApplicationBootstrap();
 
@@ -79,9 +83,10 @@ describe('SportSeed', () => {
       );
     });
 
-    it('✅ 모든 종목이 isActive: true로 생성된다', async () => {
+    it('✅ 모든 종목이 isActive: true로 생성된다 (weight 비활성화는 update 단계에서 처리)', async () => {
       sportRepository.count.mockResolvedValue(0);
       sportRepository.save.mockResolvedValue([]);
+      sportRepository.update.mockResolvedValue({ affected: 3 });
 
       await seed.onApplicationBootstrap();
 
@@ -89,12 +94,30 @@ describe('SportSeed', () => {
       expect(savedSports.every((s) => s.isActive === true)).toBe(true);
     });
 
-    it('✅ 테이블에 데이터가 이미 있으면 삽입하지 않는다', async () => {
+    it('✅ 항상 weight 종목을 비활성화한다 (초기 시딩 여부와 무관)', async () => {
+      sportRepository.count.mockResolvedValue(0);
+      sportRepository.save.mockResolvedValue([]);
+      sportRepository.update.mockResolvedValue({ affected: 3 });
+
+      await seed.onApplicationBootstrap();
+
+      expect(sportRepository.update).toHaveBeenCalledWith(
+        { sportType: SPORT_TYPES.WEIGHT },
+        { isActive: false },
+      );
+    });
+
+    it('✅ 테이블에 데이터가 이미 있으면 삽입하지 않는다 (weight 비활성화는 여전히 실행)', async () => {
       sportRepository.count.mockResolvedValue(7);
+      sportRepository.update.mockResolvedValue({ affected: 3 });
 
       await seed.onApplicationBootstrap();
 
       expect(sportRepository.save).not.toHaveBeenCalled();
+      expect(sportRepository.update).toHaveBeenCalledWith(
+        { sportType: SPORT_TYPES.WEIGHT },
+        { isActive: false },
+      );
     });
   });
 });
