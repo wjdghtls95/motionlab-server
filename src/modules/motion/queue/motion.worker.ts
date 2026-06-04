@@ -1,6 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 import { MotionStatus } from '@common/constants/motion-status.enum';
 
@@ -182,6 +183,14 @@ export class MotionWorker extends WorkerHost {
         cause: (updateErr as Error)?.message,
       });
     }
+
+    Sentry.captureException(err, {
+      extra: {
+        motionId,
+        errorCode: mapped.code,
+        attemptsMade: job.attemptsMade,
+      },
+    });
 
     // TODO(v2.0): gateway.emitFailed(motionId, { code: mapped.code, message: mapped.message });
 

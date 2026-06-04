@@ -8,6 +8,11 @@ import { MotionStatus } from '@common/constants/motion-status.enum';
 import { JOB_ERRORS } from '@common/constants/errors/job.errors';
 import { MOTION_CONSTANTS } from '@common/constants/motion.constant';
 import { Job } from 'bullmq';
+import * as Sentry from '@sentry/node';
+
+jest.mock('@sentry/node', () => ({
+  captureException: jest.fn(),
+}));
 
 // ──────────────────────────────────────────
 // 의존성 mock 팩토리
@@ -359,7 +364,87 @@ describe('MotionWorker', () => {
   });
 
   // ─────────────────────────────────────────
-  // 7. updateStatusWithError 자체 실패 (안전망 검증)
+  // 7. Sentry.captureException 호출 검증
+  // ─────────────────────────────────────────
+
+  describe('Sentry captureException 호출 검증', () => {
+    const sentryCaptureException = Sentry.captureException as jest.Mock;
+
+    beforeEach(() => {
+      sentryCaptureException.mockClear();
+    });
+
+    it('❌ 마지막 시도에서 FAILED 확정 시 captureException을 호출한다', async () => {
+      const job = buildJob({
+        attemptsMade: MOTION_CONSTANTS.MAX_ATTEMPTS - 1,
+      } as any);
+      motionService.getMotionForWork.mockResolvedValue(buildMotion());
+      motionService.updateStatus.mockResolvedValue(undefined);
+      motionRedisRepository.get.mockResolvedValue(null);
+      storageService.getDownloadUrl.mockResolvedValue(
+        'https://r2.example.com/video.mp4',
+      );
+      analyzerClient.analyze.mockRejectedValue(JOB_ERRORS.SYS_TIMEOUT);
+      motionService.updateStatusWithError.mockResolvedValue(undefined);
+
+      await expect(worker.process(job)).rejects.toBeDefined();
+
+      expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+      expect(sentryCaptureException).toHaveBeenCalledWith(
+        JOB_ERRORS.SYS_TIMEOUT,
+        expect.objectContaining({
+          extra: expect.objectContaining({
+            motionId: 1,
+            errorCode: JOB_ERRORS.SYS_TIMEOUT.code,
+          }),
+        }),
+      );
+    });
+
+    it('✅ 재시도 가능 에러 + 재시도 남음(RETRYING) 시 captureException을 호출하지 않는다', async () => {
+      const job = buildJob({ attemptsMade: 0 } as any);
+      motionService.getMotionForWork.mockResolvedValue(buildMotion());
+      motionService.updateStatus.mockResolvedValue(undefined);
+      motionRedisRepository.get.mockResolvedValue(null);
+      storageService.getDownloadUrl.mockResolvedValue(
+        'https://r2.example.com/video.mp4',
+      );
+      analyzerClient.analyze.mockRejectedValue(JOB_ERRORS.SYS_TIMEOUT);
+      motionService.updateStatusWithError.mockResolvedValue(undefined);
+
+      await expect(worker.process(job)).rejects.toBeDefined();
+
+      expect(sentryCaptureException).not.toHaveBeenCalled();
+    });
+
+    it('❌ 재시도 불가 에러(retryable: false) 첫 시도에도 captureException을 호출한다', async () => {
+      const job = buildJob({ attemptsMade: 0 } as any);
+      motionService.getMotionForWork.mockResolvedValue(buildMotion());
+      motionService.updateStatus.mockResolvedValue(undefined);
+      motionRedisRepository.get.mockResolvedValue(null);
+      storageService.getDownloadUrl.mockResolvedValue(
+        'https://r2.example.com/video.mp4',
+      );
+      analyzerClient.analyze.mockRejectedValue(JOB_ERRORS.AN_NO_KEYPOINTS);
+      motionService.updateStatusWithError.mockResolvedValue(undefined);
+
+      await expect(worker.process(job)).rejects.toBeDefined();
+
+      expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+      expect(sentryCaptureException).toHaveBeenCalledWith(
+        JOB_ERRORS.AN_NO_KEYPOINTS,
+        expect.objectContaining({
+          extra: expect.objectContaining({
+            motionId: 1,
+            errorCode: JOB_ERRORS.AN_NO_KEYPOINTS.code,
+          }),
+        }),
+      );
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // 8. updateStatusWithError 자체 실패 (안전망 검증)
   // handleJobError를 직접 호출하여 status 업데이트 실패 시에도
   // throw를 유지하는지 확인한다
   // ─────────────────────────────────────────
