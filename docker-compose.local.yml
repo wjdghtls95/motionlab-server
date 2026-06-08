@@ -1,0 +1,171 @@
+# docker-compose.local.yml
+#
+# 목적: 로컬 Playwright E2E 전체 통과용 풀스택 환경
+#   DB(MySQL/Redis/MongoDB) + NestJS(로컬 빌드) + FastAPI(NOOP 모드)
+#
+# 사용법:
+#   pnpm local:up    -- 전체 기동 (최초 실행 시 NestJS Docker 이미지 빌드 포함)
+#   pnpm local:down  -- 전체 종료
+#   pnpm local:logs  -- 전체 로그 스트리밍
+#
+# 주의:
+#   - motionlab-front는 별도 터미널에서 `pnpm dev` 로 실행 (포트 :4000)
+#   - docker-compose.dev.yml 과 포트 충돌 방지를 위해 동시 실행 금지
+#   - NestJS 빌드는 최초/코드 변경 시에만 필요 (`local:up`이 자동으로 처리)
+
+services:
+  # ========================================
+  # MySQL 8.0
+  # ========================================
+  mysql:
+    image: mysql:8.0
+    container_name: motionlab-local-mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - ./environments/.env.local
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - local_mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - motionlab-local
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # Redis 7
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: motionlab-local-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - local_redis_data:/data
+    networks:
+      - motionlab-local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # MongoDB 7
+  # ========================================
+  mongodb:
+    image: mongo:7
+    container_name: motionlab-local-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - local_mongodb_data:/data/db
+    networks:
+      - motionlab-local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # NestJS API (로컬 소스 빌드)
+  # ========================================
+  # - env_file로 .env.local 공유
+  # - Docker 내부 통신 주소로 재정의 (DB_HOST, REDIS_HOST, MONGO_URL, ANALYZER_URL)
+  # - APP_URL=http://nestjs:3000: LOCAL 스토리지 모드에서 FastAPI가 /files 경로로 영상 다운로드
+  nestjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: motionlab-local-nestjs
+    user: "0:0"
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./environments/.env.local
+    environment:
+      NODE_ENV: local
+      DB_HOST: mysql
+      REDIS_HOST: redis
+      MONGO_URL: mongodb://mongodb:27017/motionlab
+      ANALYZER_URL: http://fastapi:8000
+      APP_URL: http://nestjs:3000
+    volumes:
+      - nestjs_local_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - motionlab-local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', r => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ========================================
+  # FastAPI AI 서버 (GHCR 이미지, NOOP 모드)
+  # ========================================
+  # - ENABLE_LLM_NOOP=true: OpenAI 미호출 (규칙 기반 피드백만 반환)
+  # - INTERNAL_API_KEY: env_file에서 NestJS와 동일한 값 공유
+  # - sports_config.json: motionlab-infra/config/ 에서 volume mount
+  fastapi:
+    image: ghcr.io/wjdghtls95/motionlab-ai:latest
+    container_name: motionlab-local-fastapi
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./environments/.env.local
+    environment:
+      ENABLE_LLM_NOOP: "true"
+      APP_ENV: development
+      ALLOWED_ORIGINS: "*"
+      CONFIG_SOURCE: file
+      SPORTS_CONFIG_PATH: /app/config/sports_config.json
+    volumes:
+      - ../motionlab-infra/config/sports_config.json:/app/config/sports_config.json:ro
+      - fastapi_local_temp:/app/temp_videos
+    networks:
+      - motionlab-local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  local_mysql_data:
+    driver: local
+  local_redis_data:
+    driver: local
+  local_mongodb_data:
+    driver: local
+  fastapi_local_temp:
+    driver: local
+  nestjs_local_uploads:
+    driver: local
+
+networks:
+  motionlab-local:
+    driver: bridge

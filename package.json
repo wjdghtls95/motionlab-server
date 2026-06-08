@@ -29,6 +29,9 @@
     "db:down": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local down",
     "db:logs": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local logs -f",
     "db:restart": "docker compose -f docker-compose.dev.yml --env-file environments/.env.local restart",
+    "local:up": "docker compose -f docker-compose.local.yml --env-file environments/.env.local up -d --build",
+    "local:down": "docker compose -f docker-compose.local.yml --env-file environments/.env.local down",
+    "local:logs": "docker compose -f docker-compose.local.yml --env-file environments/.env.local logs -f",
     "migration:run": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run",
     "migration:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert",
     "migration:show": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:show"

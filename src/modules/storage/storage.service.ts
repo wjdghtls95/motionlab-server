@@ -72,13 +72,22 @@ export class StorageService {
 
       try {
         await fs.rename(localPath, dest);
-        this.logger.log(`Local file stored: ${videoKey}`);
-        return { videoKey, storageType: StorageType.LOCAL };
-      } catch (e) {
-        // 실패 시 tmp 정리 시도 (D20)
-        await fs.unlink(localPath).catch(() => undefined);
-        throw e;
+      } catch (e: any) {
+        if (e?.code !== 'EXDEV') {
+          await fs.unlink(localPath).catch(() => undefined);
+          throw e;
+        }
+        // EXDEV: cross-device rename (e.g. /tmp → Docker named volume)
+        try {
+          await fs.copyFile(localPath, dest);
+          await fs.unlink(localPath).catch(() => undefined);
+        } catch (copyErr) {
+          await fs.unlink(localPath).catch(() => undefined);
+          throw copyErr;
+        }
       }
+      this.logger.log(`Local file stored: ${videoKey}`);
+      return { videoKey, storageType: StorageType.LOCAL };
     }
 
     // S3
