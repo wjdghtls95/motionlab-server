@@ -26,8 +26,8 @@ export const MOTION_CONSTANTS = {
   CLEANUP_CRON_SCHEDULE: '0 3 * * *', // 매일 새벽 3시
   CLEANUP_BATCH_SIZE: 100,
 
-  // 분석 타임아웃
-  ANALYZER_TIMEOUT: 60000,
+  // 분석 타임아웃 — Docker 환경에서 MediaPipe 처리 시간이 ~73s이므로 120s로 설정
+  ANALYZER_TIMEOUT: 120000,
 
   WORKER_LOCK_DURATION: 120000, // 2분: BullMQ job lock 유지
   WORKER_STALLED_INTERVAL: 120000, // 2분: stalled job 체크 간격
