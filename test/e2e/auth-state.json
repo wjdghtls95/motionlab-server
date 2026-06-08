@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4000",
+      "localStorage": [
+        {
+          "name": "auth-storage",
+          "value": "{\"state\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjE4LCJlbWFpbCI6InRlc3QtMTc4MDU2OTEzNjIyN0Btb3Rpb25sYWIuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODA1NjkxNDIsImV4cCI6MTc4MDU3MDA0Mn0._pQcTOaYYb8f7NkThb0mFZfgEhEX8QRJYbVnF6B0c-U\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjE4LCJlbWFpbCI6InRlc3QtMTc4MDU2OTEzNjIyN0Btb3Rpb25sYWIuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODA1NjkxNDIsImV4cCI6MTc4MTE3Mzk0Mn0.ylhuZUxgUycE4QD7Inq11gd4qrnmeKDgxahIedmXJUk\",\"user\":{\"id\":18,\"email\":\"test-1780569136227@motionlab.com\",\"name\":\"E2E Test User\",\"role\":\"USER\"},\"isAuthenticated\":true},\"version\":0}"
+        }
+      ]
+    }
+  ]
+}
